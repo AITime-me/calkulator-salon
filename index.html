@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Месячный бюджет салона красоты</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --border: #e2e5ea;
+      --text: #1a1d23;
+      --text-muted: #6b7280;
+      --primary: #5b6af0;
+      --primary-hover: #4a58e0;
+      --income: #16a34a;
+      --income-bg: #ecfdf3;
+      --expense: #dc2626;
+      --expense-bg: #fef2f2;
+      --profit: #15803d;
+      --profit-bg: #dcfce7;
+      --loss: #b91c1c;
+      --loss-bg: #fee2e2;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.04);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    /* Шапка */
+    .header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .header h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .month-picker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .month-picker label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .month-picker input[type="month"] {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    /* Карточки */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    /* Итоги */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .summary-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .summary-item .label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .summary-item .value {
+      font-size: 1.05rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .summary-item.income .value { color: var(--income); }
+    .summary-item.expense .value { color: var(--expense); }
+
+    /* Главная карточка прибыли */
+    .profit-card {
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      border: 2px solid transparent;
+      transition: background .2s, border-color .2s;
+    }
+
+    .profit-card.positive {
+      background: var(--profit-bg);
+      border-color: #86efac;
+    }
+
+    .profit-card.negative {
+      background: var(--loss-bg);
+      border-color: #fca5a5;
+    }
+
+    .profit-card .profit-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    .profit-card.positive .profit-label { color: var(--profit); }
+    .profit-card.negative .profit-label { color: var(--loss); }
+
+    .profit-card .profit-value {
+      font-size: 2rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .profit-card.positive .profit-value { color: var(--profit); }
+    .profit-card.negative .profit-value { color: var(--loss); }
+
+    /* Формы */
+    .forms-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 700px) {
+      .forms-row { grid-template-columns: 1fr; }
+    }
+
+    .form-card.income-card { border-top: 3px solid var(--income); }
+    .form-card.expense-card { border-top: 3px solid var(--expense); }
+
+    .form-card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+
+    .form-card.income-card h2 { color: var(--income); }
+    .form-card.expense-card h2 { color: var(--expense); }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .field .hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.92rem;
+      background: var(--surface);
+      color: var(--text);
+      transition: border-color .15s;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(91,106,240,.15);
+    }
+
+    .field.error input,
+    .field.error select {
+      border-color: var(--expense);
+    }
+
+    .field-error {
+      font-size: 0.75rem;
+      color: var(--expense);
+      margin-top: 4px;
+      min-height: 1.1em;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 9px 18px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, opacity .15s;
+    }
+
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .btn-income {
+      background: var(--income);
+      color: #fff;
+      width: 100%;
+    }
+    .btn-income:hover:not(:disabled) { background: #15803d; }
+
+    .btn-expense {
+      background: var(--expense);
+      color: #fff;
+      width: 100%;
+    }
+    .btn-expense:hover:not(:disabled) { background: #b91c1c; }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--expense);
+      border: 1px solid var(--expense);
+      font-size: 0.82rem;
+      padding: 7px 14px;
+    }
+    .btn-danger:hover { background: var(--expense-bg); }
+
+    .btn-delete {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      line-height: 1;
+      transition: color .15s, background .15s;
+    }
+    .btn-delete:hover {
+      color: var(--expense);
+      background: var(--expense-bg);
+    }
+
+    /* История */
+    .history-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .history-header h2 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .history-list {
+      list-style: none;
+    }
+
+    .history-item {
+      display: grid;
+      grid-template-columns: 90px 70px 1fr auto auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
+    }
+
+    .history-item:last-child { border-bottom: none; }
+
+    @media (max-width: 600px) {
+      .history-item {
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        gap: 4px 10px;
+      }
+      .history-item .hi-date { grid-column: 1; }
+      .history-item .hi-type { grid-column: 1; font-size: 0.78rem; }
+      .history-item .hi-category { grid-column: 1 / -1; font-weight: 500; }
+      .history-item .hi-amount { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+      .history-item .hi-delete { grid-column: 2; grid-row: 3; justify-self: end; }
+    }
+
+    .hi-date { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .badge-income { background: var(--income-bg); color: var(--income); }
+    .badge-expense { background: var(--expense-bg); color: var(--expense); }
+
+    .hi-amount {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .hi-amount.income { color: var(--income); }
+    .hi-amount.expense { color: var(--expense); }
+
+    .empty-state {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* Расшифровка по категориям */
+    .breakdown-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 700px) {
+      .breakdown-grid { grid-template-columns: 1fr; }
+    }
+
+    .breakdown-block h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .breakdown-block.income-block h3 { color: var(--income); }
+    .breakdown-block.expense-block h3 { color: var(--expense); }
+
+    .breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+    }
+
+    .breakdown-table tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .breakdown-table tr:last-child { border-bottom: none; }
+
+    .breakdown-table td {
+      padding: 7px 0;
+    }
+
+    .breakdown-table td:last-child {
+      text-align: right;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .breakdown-empty {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      padding: 8px 0;
+    }
+
+    /* Уведомления */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--text);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,.18);
+      animation: toast-in .25s ease, toast-out .3s ease 2.2s forwards;
+      pointer-events: auto;
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes toast-out {
+      from { opacity: 1; }
+      to   { opacity: 0; transform: translateY(-8px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>Месячный бюджет салона</h1>
+      <div class="month-picker">
+        <label for="budget-month">Месяц бюджета</label>
+        <input type="month" id="budget-month">
+      </div>
+    </header>
+
+    <!-- Карточка чистой прибыли — самая заметная -->
+    <div class="profit-card positive" id="profit-card">
+      <div class="profit-label">Чистая прибыль</div>
+      <div class="profit-value" id="net-profit">0 ₽</div>
+    </div>
+
+    <!-- Итоги за месяц -->
+    <div class="summary-grid" id="summary-grid">
+      <div class="summary-item income">
+        <div class="label">Общий доход</div>
+        <div class="value" id="total-income">0 ₽</div>
+      </div>
+      <div class="summary-item expense">
+        <div class="label">Расходы без ФОТ и аренды</div>
+        <div class="value" id="expenses-without-fot-rent">0 ₽</div>
+      </div>
+      <div class="summary-item expense">
+        <div class="label">Фонд оплаты труда</div>
+        <div class="value" id="fot-amount">0 ₽</div>
+      </div>
+      <div class="summary-item expense">
+        <div class="label">Аренда</div>
+        <div class="value" id="rent-amount">0 ₽</div>
+      </div>
+      <div class="summary-item expense">
+        <div class="label">Итого расходов без аренды</div>
+        <div class="value" id="total-without-rent">0 ₽</div>
+      </div>
+      <div class="summary-item expense">
+        <div class="label">Итого расходов с арендой</div>
+        <div class="value" id="total-with-rent">0 ₽</div>
+      </div>
+    </div>
+
+    <!-- Формы добавления -->
+    <div class="forms-row">
+      <div class="card form-card income-card">
+        <h2>Добавить доход</h2>
+        <form id="income-form" novalidate>
+          <div class="field" id="income-date-field">
+            <label for="income-date">Дата</label>
+            <input type="date" id="income-date">
+            <div class="hint">Дата совершения операции</div>
+            <div class="field-error" id="income-date-error"></div>
+          </div>
+          <div class="field" id="income-category-field">
+            <label for="income-category">Категория</label>
+            <select id="income-category">
+              <option value="">— выберите —</option>
+              <option value="Услуги">Услуги</option>
+              <option value="Косметика">Косметика</option>
+            </select>
+            <div class="hint">Источник дохода</div>
+            <div class="field-error" id="income-category-error"></div>
+          </div>
+          <div class="field" id="income-amount-field">
+            <label for="income-amount">Сумма, ₽</label>
+            <input type="number" id="income-amount" min="0.01" step="0.01" placeholder="0">
+            <div class="hint">Сумма в рублях, больше нуля</div>
+            <div class="field-error" id="income-amount-error"></div>
+          </div>
+          <button type="submit" class="btn btn-income">Добавить доход</button>
+        </form>
+      </div>
+
+      <div class="card form-card expense-card">
+        <h2>Добавить расход</h2>
+        <form id="expense-form" novalidate>
+          <div class="field" id="expense-date-field">
+            <label for="expense-date">Дата</label>
+            <input type="date" id="expense-date">
+            <div class="hint">Дата совершения операции</div>
+            <div class="field-error" id="expense-date-error"></div>
+          </div>
+          <div class="field" id="expense-category-field">
+            <label for="expense-category">Категория</label>
+            <select id="expense-category">
+              <option value="">— выберите —</option>
+              <option value="Аренда">Аренда</option>
+              <option value="Коммуналка">Коммуналка</option>
+              <option value="Интернет и связь">Интернет и связь</option>
+              <option value="Боты">Боты</option>
+              <option value="Сервисы">Сервисы</option>
+              <option value="Лицензии amoCRM">Лицензии amoCRM</option>
+              <option value="Налог">Налог</option>
+              <option value="Комиссия по эквайрингу">Комиссия по эквайрингу</option>
+              <option value="Материалы">Материалы</option>
+              <option value="Печатная продукция">Печатная продукция</option>
+              <option value="Косметика">Косметика</option>
+              <option value="Бытовые нужды">Бытовые нужды</option>
+              <option value="Еда и вода">Еда и вода</option>
+              <option value="Прочие: ремонт и т.п.">Прочие: ремонт и т.п.</option>
+              <option value="Развлечения">Развлечения</option>
+              <option value="Реклама">Реклама</option>
+              <option value="Оборудование, инвентарь">Оборудование, инвентарь</option>
+              <option value="Фонд оплаты труда">Фонд оплаты труда</option>
+            </select>
+            <div class="hint">Статья расхода</div>
+            <div class="field-error" id="expense-category-error"></div>
+          </div>
+          <div class="field" id="expense-amount-field">
+            <label for="expense-amount">Сумма, ₽</label>
+            <input type="number" id="expense-amount" min="0.01" step="0.01" placeholder="0">
+            <div class="hint">Сумма в рублях, больше нуля</div>
+            <div class="field-error" id="expense-amount-error"></div>
+          </div>
+          <button type="submit" class="btn btn-expense">Добавить расход</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- История операций -->
+    <div class="card">
+      <div class="history-header">
+        <h2>История операций</h2>
+        <button type="button" class="btn btn-danger" id="clear-month-btn">Очистить месяц</button>
+      </div>
+      <ul class="history-list" id="history-list"></ul>
+      <div class="empty-state" id="history-empty" hidden>
+        Операций за выбранный месяц пока нет. Добавьте доход или расход.
+      </div>
+    </div>
+
+    <!-- Расшифровка по категориям -->
+    <div class="card">
+      <div class="card-title">Расшифровка по категориям</div>
+      <div class="breakdown-grid">
+        <div class="breakdown-block income-block">
+          <h3>Доходы</h3>
+          <div id="income-breakdown"></div>
+        </div>
+        <div class="breakdown-block expense-block">
+          <h3>Расходы</h3>
+          <div id="expense-breakdown"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    // ─── Константы ───────────────────────────────────────────────
+    const STORAGE_KEY = 'salon-budget-operations';
+    const CATEGORY_FOT = 'Фонд оплаты труда';
+    const CATEGORY_RENT = 'Аренда';
+
+    // ─── Состояние ───────────────────────────────────────────────
+    let operations = [];
+
+    // ─── DOM-элементы ────────────────────────────────────────────
+    const budgetMonthInput = document.getElementById('budget-month');
+    const incomeForm = document.getElementById('income-form');
+    const expenseForm = document.getElementById('expense-form');
+    const historyList = document.getElementById('history-list');
+    const historyEmpty = document.getElementById('history-empty');
+    const clearMonthBtn = document.getElementById('clear-month-btn');
+    const profitCard = document.getElementById('profit-card');
+    const netProfitEl = document.getElementById('net-profit');
+    const toastContainer = document.getElementById('toast-container');
+
+    // ─── Утилиты ─────────────────────────────────────────────────
+
+    /** Форматирование суммы в рублях */
+    function formatMoney(amount) {
+      return new Intl.NumberFormat('ru-RU', {
+        style: 'currency',
+        currency: 'RUB',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }).format(amount);
+    }
+
+    /** Извлечь ключ месяца YYYY-MM из строки даты YYYY-MM-DD */
+    function getMonthKey(dateStr) {
+      return dateStr.slice(0, 7);
+    }
+
+    /** Текущий месяц в формате YYYY-MM */
+    function getCurrentMonthKey() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      return `${y}-${m}`;
+    }
+
+    /** Сегодня в формате YYYY-MM-DD */
+    function getTodayDate() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    /** Форматирование даты для отображения */
+    function formatDate(dateStr) {
+      const [y, m, d] = dateStr.split('-');
+      return `${d}.${m}.${y}`;
+    }
+
+    /** Генерация уникального id операции */
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    // ─── localStorage ────────────────────────────────────────────
+
+    function loadOperations() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        operations = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(operations)) operations = [];
+      } catch {
+        operations = [];
+      }
+    }
+
+    function saveOperations() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(operations));
+    }
+
+    // ─── Фильтрация по месяцу ────────────────────────────────────
+
+    function getSelectedMonth() {
+      return budgetMonthInput.value;
+    }
+
+    function getOperationsForMonth(monthKey) {
+      return operations.filter(op => getMonthKey(op.date) === monthKey);
+    }
+
+    // ─── Расчёты ─────────────────────────────────────────────────
+
+    function calculateSummary(monthOps) {
+      let totalIncome = 0;
+      let expensesWithoutFotRent = 0;
+      let fot = 0;
+      let rent = 0;
+
+      monthOps.forEach(op => {
+        if (op.type === 'income') {
+          totalIncome += op.amount;
+        } else {
+          if (op.category === CATEGORY_FOT) {
+            fot += op.amount;
+          } else if (op.category === CATEGORY_RENT) {
+            rent += op.amount;
+          } else {
+            expensesWithoutFotRent += op.amount;
+          }
+        }
+      });
+
+      const totalWithoutRent = expensesWithoutFotRent + fot;
+      const totalWithRent = totalWithoutRent + rent;
+      const netProfit = totalIncome - totalWithRent;
+
+      return {
+        totalIncome,
+        expensesWithoutFotRent,
+        fot,
+        rent,
+        totalWithoutRent,
+        totalWithRent,
+        netProfit
+      };
+    }
+
+    /** Группировка сумм по категориям, сортировка по убыванию */
+    function groupByCategory(monthOps, type) {
+      const map = {};
+      monthOps
+        .filter(op => op.type === type)
+        .forEach(op => {
+          map[op.category] = (map[op.category] || 0) + op.amount;
+        });
+
+      return Object.entries(map)
+        .sort((a, b) => b[1] - a[1]);
+    }
+
+    // ─── Валидация ───────────────────────────────────────────────
+
+    function validateOperation(date, category, amountStr) {
+      const errors = { date: '', category: '', amount: '' };
+
+      if (!date) {
+        errors.date = 'Укажите дату операции';
+      }
+
+      if (!category) {
+        errors.category = 'Выберите категорию';
+      }
+
+      if (amountStr === '' || amountStr == null) {
+        errors.amount = 'Укажите сумму';
+      } else {
+        const amount = parseFloat(amountStr);
+        if (isNaN(amount)) {
+          errors.amount = 'Введите корректное число';
+        } else if (amount <= 0) {
+          errors.amount = 'Сумма должна быть больше нуля';
+        }
+      }
+
+      return errors;
+    }
+
+    function showFieldErrors(prefix, errors) {
+      const fields = ['date', 'category', 'amount'];
+      fields.forEach(field => {
+        const fieldEl = document.getElementById(`${prefix}-${field}-field`);
+        const errorEl = document.getElementById(`${prefix}-${field}-error`);
+        const msg = errors[field];
+        if (msg) {
+          fieldEl.classList.add('error');
+          errorEl.textContent = msg;
+        } else {
+          fieldEl.classList.remove('error');
+          errorEl.textContent = '';
+        }
+      });
+    }
+
+    function clearFieldErrors(prefix) {
+      showFieldErrors(prefix, { date: '', category: '', amount: '' });
+    }
+
+    // ─── Уведомления ─────────────────────────────────────────────
+
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      toastContainer.appendChild(toast);
+      setTimeout(() => toast.remove(), 2600);
+    }
+
+    // ─── Рендер ──────────────────────────────────────────────────
+
+    function renderSummary() {
+      const monthKey = getSelectedMonth();
+      const monthOps = getOperationsForMonth(monthKey);
+      const s = calculateSummary(monthOps);
+
+      document.getElementById('total-income').textContent = formatMoney(s.totalIncome);
+      document.getElementById('expenses-without-fot-rent').textContent = formatMoney(s.expensesWithoutFotRent);
+      document.getElementById('fot-amount').textContent = formatMoney(s.fot);
+      document.getElementById('rent-amount').textContent = formatMoney(s.rent);
+      document.getElementById('total-without-rent').textContent = formatMoney(s.totalWithoutRent);
+      document.getElementById('total-with-rent').textContent = formatMoney(s.totalWithRent);
+
+      netProfitEl.textContent = formatMoney(s.netProfit);
+
+      // Визуальное выделение прибыли / убытка
+      if (s.netProfit >= 0) {
+        profitCard.classList.remove('negative');
+        profitCard.classList.add('positive');
+      } else {
+        profitCard.classList.remove('positive');
+        profitCard.classList.add('negative');
+      }
+    }
+
+    function renderBreakdownTable(entries, containerId) {
+      const container = document.getElementById(containerId);
+      if (entries.length === 0) {
+        container.innerHTML = '<div class="breakdown-empty">Нет данных</div>';
+        return;
+      }
+
+      const rows = entries.map(([cat, sum]) =>
+        `<tr><td>${cat}</td><td>${formatMoney(sum)}</td></tr>`
+      ).join('');
+
+      container.innerHTML = `<table class="breakdown-table"><tbody>${rows}</tbody></table>`;
+    }
+
+    function renderBreakdown() {
+      const monthKey = getSelectedMonth();
+      const monthOps = getOperationsForMonth(monthKey);
+
+      renderBreakdownTable(groupByCategory(monthOps, 'income'), 'income-breakdown');
+      renderBreakdownTable(groupByCategory(monthOps, 'expense'), 'expense-breakdown');
+    }
+
+    function renderHistory() {
+      const monthKey = getSelectedMonth();
+      const monthOps = getOperationsForMonth(monthKey);
+
+      // Сортировка: новые сверху
+      const sorted = [...monthOps].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+
+      historyList.innerHTML = '';
+
+      if (sorted.length === 0) {
+        historyEmpty.hidden = false;
+        clearMonthBtn.disabled = true;
+        return;
+      }
+
+      historyEmpty.hidden = true;
+      clearMonthBtn.disabled = false;
+
+      sorted.forEach(op => {
+        const li = document.createElement('li');
+        li.className = 'history-item';
+        li.dataset.id = op.id;
+
+        const isIncome = op.type === 'income';
+        const typeLabel = isIncome ? 'Доход' : 'Расход';
+        const badgeClass = isIncome ? 'badge-income' : 'badge-expense';
+        const amountClass = isIncome ? 'income' : 'expense';
+        const sign = isIncome ? '+' : '−';
+
+        li.innerHTML = `
+          <span class="hi-date">${formatDate(op.date)}</span>
+          <span class="hi-type"><span class="badge ${badgeClass}">${typeLabel}</span></span>
+          <span class="hi-category">${op.category}</span>
+          <span class="hi-amount ${amountClass}">${sign}${formatMoney(op.amount)}</span>
+          <button type="button" class="btn-delete" title="Удалить" aria-label="Удалить операцию">✕</button>
+        `;
+
+        li.querySelector('.btn-delete').addEventListener('click', () => deleteOperation(op.id));
+        historyList.appendChild(li);
+      });
+    }
+
+    function renderAll() {
+      renderSummary();
+      renderHistory();
+      renderBreakdown();
+    }
+
+    // ─── CRUD операций ───────────────────────────────────────────
+
+    function addOperation(type, date, category, amount) {
+      const op = {
+        id: generateId(),
+        type,
+        date,
+        category,
+        amount
+      };
+      operations.push(op);
+      saveOperations();
+
+      // Автопереключение на месяц операции
+      const monthKey = getMonthKey(date);
+      budgetMonthInput.value = monthKey;
+
+      renderAll();
+      return op;
+    }
+
+    function deleteOperation(id) {
+      operations = operations.filter(op => op.id !== id);
+      saveOperations();
+      renderAll();
+    }
+
+    function clearSelectedMonth() {
+      const monthKey = getSelectedMonth();
+      const count = getOperationsForMonth(monthKey).length;
+      if (count === 0) return;
+
+      const confirmed = confirm(`Удалить все ${count} операций за выбранный месяц?`);
+      if (!confirmed) return;
+
+      operations = operations.filter(op => getMonthKey(op.date) !== monthKey);
+      saveOperations();
+      renderAll();
+      showToast('Месяц очищен');
+    }
+
+    // ─── Обработчики форм ────────────────────────────────────────
+
+    function handleFormSubmit(type, form, prefix) {
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+
+        const date = document.getElementById(`${prefix}-date`).value;
+        const category = document.getElementById(`${prefix}-category`).value;
+        const amountStr = document.getElementById(`${prefix}-amount`).value;
+
+        const errors = validateOperation(date, category, amountStr);
+        const hasErrors = errors.date || errors.category || errors.amount;
+
+        if (hasErrors) {
+          showFieldErrors(prefix, errors);
+          return;
+        }
+
+        clearFieldErrors(prefix);
+        const amount = parseFloat(amountStr);
+        addOperation(type, date, category, amount);
+
+        // Очистка поля суммы после успешного добавления
+        document.getElementById(`${prefix}-amount`).value = '';
+
+        showToast(type === 'income' ? 'Доход добавлен' : 'Расход добавлен');
+      });
+
+      // Сброс ошибок при вводе
+      ['date', 'category', 'amount'].forEach(field => {
+        const el = document.getElementById(`${prefix}-${field}`);
+        el.addEventListener('input', () => {
+          const fieldEl = document.getElementById(`${prefix}-${field}-field`);
+          const errorEl = document.getElementById(`${prefix}-${field}-error`);
+          fieldEl.classList.remove('error');
+          errorEl.textContent = '';
+        });
+        el.addEventListener('change', () => {
+          const fieldEl = document.getElementById(`${prefix}-${field}-field`);
+          const errorEl = document.getElementById(`${prefix}-${field}-error`);
+          fieldEl.classList.remove('error');
+          errorEl.textContent = '';
+        });
+      });
+    }
+
+    // ─── Инициализация ───────────────────────────────────────────
+
+    function init() {
+      loadOperations();
+
+      // Установка текущего месяца и даты по умолчанию
+      const currentMonth = getCurrentMonthKey();
+      const today = getTodayDate();
+      budgetMonthInput.value = currentMonth;
+      document.getElementById('income-date').value = today;
+      document.getElementById('expense-date').value = today;
+
+      // Смена месяца — пересчёт
+      budgetMonthInput.addEventListener('change', renderAll);
+
+      // Формы
+      handleFormSubmit('income', incomeForm, 'income');
+      handleFormSubmit('expense', expenseForm, 'expense');
+
+      // Очистка месяца
+      clearMonthBtn.addEventListener('click', clearSelectedMonth);
+
+      renderAll();
+    }
+
+    init();
+  </script>
+</body>
+</html>
