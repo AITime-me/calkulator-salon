@@ -4,10 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Месячный бюджет салона красоты</title>
+  <script>
+    // Применяем тему до отрисовки страницы, чтобы избежать мигания
+    (function () {
+      const key = 'salon-budget-theme';
+      const saved = localStorage.getItem(key);
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = saved === 'dark' || saved === 'light' ? saved : (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    :root {
+    :root,
+    [data-theme="light"] {
       --bg: #f4f5f7;
       --surface: #ffffff;
       --border: #e2e5ea;
@@ -17,15 +28,56 @@
       --primary-hover: #4a58e0;
       --income: #16a34a;
       --income-bg: #ecfdf3;
+      --income-hover: #15803d;
       --expense: #dc2626;
       --expense-bg: #fef2f2;
+      --expense-hover: #b91c1c;
       --profit: #15803d;
       --profit-bg: #dcfce7;
+      --profit-border: #86efac;
       --loss: #b91c1c;
       --loss-bg: #fee2e2;
+      --loss-border: #fca5a5;
       --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.04);
+      --focus-ring: rgba(91,106,240,.15);
+      --toast-bg: #1a1d23;
+      --toast-text: #ffffff;
       --radius: 12px;
       --radius-sm: 8px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2d3340;
+      --text: #e8eaed;
+      --text-muted: #9ca3af;
+      --primary: #7c8aff;
+      --primary-hover: #6b79f0;
+      --income: #4ade80;
+      --income-bg: rgba(20, 83, 45, 0.35);
+      --income-hover: #22c55e;
+      --expense: #f87171;
+      --expense-bg: rgba(127, 29, 29, 0.35);
+      --expense-hover: #ef4444;
+      --profit: #4ade80;
+      --profit-bg: rgba(20, 83, 45, 0.4);
+      --profit-border: #22c55e;
+      --loss: #fca5a5;
+      --loss-bg: rgba(127, 29, 29, 0.4);
+      --loss-border: #ef4444;
+      --shadow: 0 1px 3px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.25);
+      --focus-ring: rgba(124,138,255,.25);
+      --toast-bg: #2d3340;
+      --toast-text: #e8eaed;
+    }
+
+    html {
+      color-scheme: light;
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
     }
 
     body {
@@ -57,6 +109,45 @@
       font-weight: 700;
       letter-spacing: -0.02em;
     }
+
+    .header-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      box-shadow: var(--shadow);
+      transition: background .15s, border-color .15s, transform .15s;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--primary);
+      background: var(--bg);
+    }
+
+    .theme-toggle:active {
+      transform: scale(0.96);
+    }
+
+    .theme-icon-dark { display: none; }
+
+    [data-theme="dark"] .theme-icon-light { display: none; }
+    [data-theme="dark"] .theme-icon-dark { display: inline; }
 
     .month-picker {
       display: flex;
@@ -142,12 +233,12 @@
 
     .profit-card.positive {
       background: var(--profit-bg);
-      border-color: #86efac;
+      border-color: var(--profit-border);
     }
 
     .profit-card.negative {
       background: var(--loss-bg);
-      border-color: #fca5a5;
+      border-color: var(--loss-border);
     }
 
     .profit-card .profit-label {
@@ -228,7 +319,7 @@
     .field select:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(91,106,240,.15);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .field.error input,
@@ -263,14 +354,14 @@
       color: #fff;
       width: 100%;
     }
-    .btn-income:hover:not(:disabled) { background: #15803d; }
+    .btn-income:hover:not(:disabled) { background: var(--income-hover); }
 
     .btn-expense {
       background: var(--expense);
       color: #fff;
       width: 100%;
     }
-    .btn-expense:hover:not(:disabled) { background: #b91c1c; }
+    .btn-expense:hover:not(:disabled) { background: var(--expense-hover); }
 
     .btn-danger {
       background: transparent;
@@ -432,8 +523,8 @@
     }
 
     .toast {
-      background: var(--text);
-      color: #fff;
+      background: var(--toast-bg);
+      color: var(--toast-text);
       padding: 10px 18px;
       border-radius: var(--radius-sm);
       font-size: 0.85rem;
@@ -458,9 +549,15 @@
   <div class="app">
     <header class="header">
       <h1>Месячный бюджет салона</h1>
-      <div class="month-picker">
-        <label for="budget-month">Месяц бюджета</label>
-        <input type="month" id="budget-month">
+      <div class="header-controls">
+        <div class="month-picker">
+          <label for="budget-month">Месяц бюджета</label>
+          <input type="month" id="budget-month">
+        </div>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Переключить на тёмную тему" title="Тёмная тема">
+          <span class="theme-icon theme-icon-light" aria-hidden="true">🌙</span>
+          <span class="theme-icon theme-icon-dark" aria-hidden="true">☀️</span>
+        </button>
       </div>
     </header>
 
@@ -608,6 +705,7 @@
   <script>
     // ─── Константы ───────────────────────────────────────────────
     const STORAGE_KEY = 'salon-budget-operations';
+    const THEME_STORAGE_KEY = 'salon-budget-theme';
     const CATEGORY_FOT = 'Фонд оплаты труда';
     const CATEGORY_RENT = 'Аренда';
 
@@ -624,6 +722,7 @@
     const profitCard = document.getElementById('profit-card');
     const netProfitEl = document.getElementById('net-profit');
     const toastContainer = document.getElementById('toast-container');
+    const themeToggleBtn = document.getElementById('theme-toggle');
 
     // ─── Утилиты ─────────────────────────────────────────────────
 
@@ -668,6 +767,32 @@
     /** Генерация уникального id операции */
     function generateId() {
       return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    // ─── Тема ────────────────────────────────────────────────────
+
+    function getCurrentTheme() {
+      return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    }
+
+    function updateThemeToggleUi(theme) {
+      const isDark = theme === 'dark';
+      themeToggleBtn.setAttribute(
+        'aria-label',
+        isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'
+      );
+      themeToggleBtn.title = isDark ? 'Светлая тема' : 'Тёмная тема';
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+      updateThemeToggleUi(theme);
+    }
+
+    function toggleTheme() {
+      const nextTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme);
     }
 
     // ─── localStorage ────────────────────────────────────────────
@@ -990,6 +1115,8 @@
 
     function init() {
       loadOperations();
+      updateThemeToggleUi(getCurrentTheme());
+      themeToggleBtn.addEventListener('click', toggleTheme);
 
       // Установка текущего месяца и даты по умолчанию
       const currentMonth = getCurrentMonthKey();
@@ -1013,5 +1140,7 @@
 
     init();
   </script>
+</body>
+</html>
 </body>
 </html>
