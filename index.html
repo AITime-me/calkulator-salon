@@ -388,19 +388,89 @@
       background: var(--expense-bg);
     }
 
-    /* История */
-    .history-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 14px;
+    /* История (accordion) */
+    .history-accordion {
+      padding: 0;
+      overflow: hidden;
     }
 
-    .history-header h2 {
+    .history-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+      color: inherit;
+      text-align: left;
+      transition: background .15s;
+    }
+
+    .history-toggle:hover {
+      background: var(--bg);
+    }
+
+    .history-toggle:focus-visible {
+      outline: none;
+      box-shadow: inset 0 0 0 2px var(--primary);
+    }
+
+    .history-toggle-left {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .history-toggle-title {
       font-size: 1rem;
       font-weight: 600;
+    }
+
+    .history-count {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .history-chevron {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      transition: transform .3s ease;
+      flex-shrink: 0;
+    }
+
+    .history-accordion.is-open .history-chevron {
+      transform: rotate(180deg);
+    }
+
+    .history-panel {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows .3s ease;
+    }
+
+    .history-accordion.is-open .history-panel {
+      grid-template-rows: 1fr;
+    }
+
+    .history-panel-inner {
+      overflow: hidden;
+      padding: 0 18px;
+    }
+
+    .history-accordion.is-open .history-panel-inner {
+      padding-bottom: 18px;
+    }
+
+    .history-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 12px;
     }
 
     .history-list {
@@ -898,14 +968,30 @@
     </div>
 
     <!-- История операций -->
-    <div class="card">
-      <div class="history-header">
-        <h2>История операций</h2>
-        <button type="button" class="btn btn-danger" id="clear-month-btn">Очистить месяц</button>
-      </div>
-      <ul class="history-list" id="history-list"></ul>
-      <div class="empty-state" id="history-empty" hidden>
-        Операций за выбранный месяц пока нет. Добавьте доход или расход.
+    <div class="card history-accordion" id="history-accordion">
+      <button
+        type="button"
+        class="history-toggle"
+        id="history-toggle"
+        aria-expanded="false"
+        aria-controls="history-panel"
+      >
+        <span class="history-toggle-left">
+          <span class="history-toggle-title">История операций</span>
+          <span class="history-count" id="history-count">0 операций</span>
+        </span>
+        <span class="history-chevron" aria-hidden="true">▼</span>
+      </button>
+      <div class="history-panel" id="history-panel">
+        <div class="history-panel-inner">
+          <div class="history-toolbar">
+            <button type="button" class="btn btn-danger" id="clear-month-btn">Очистить месяц</button>
+          </div>
+          <ul class="history-list" id="history-list"></ul>
+          <div class="empty-state" id="history-empty" hidden>
+            За выбранный месяц операций пока нет
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1003,6 +1089,7 @@
 
     // ─── Состояние ───────────────────────────────────────────────
     let operations = [];
+    let historyExpanded = false;
 
     // ─── DOM-элементы ────────────────────────────────────────────
     const budgetMonthInput = document.getElementById('budget-month');
@@ -1010,6 +1097,9 @@
     const expenseForm = document.getElementById('expense-form');
     const historyList = document.getElementById('history-list');
     const historyEmpty = document.getElementById('history-empty');
+    const historyCountEl = document.getElementById('history-count');
+    const historyAccordion = document.getElementById('history-accordion');
+    const historyToggle = document.getElementById('history-toggle');
     const clearMonthBtn = document.getElementById('clear-month-btn');
     const profitCard = document.getElementById('profit-card');
     const netProfitEl = document.getElementById('net-profit');
@@ -1125,6 +1215,27 @@
       if (showNotification) {
         showToast('Месяц: ' + formatMonthLabel(monthKey));
       }
+    }
+
+    /** Склонение «операция» */
+    function pluralOperations(count) {
+      const abs = Math.abs(count) % 100;
+      const n1 = abs % 10;
+      if (abs > 10 && abs < 20) return count + ' операций';
+      if (n1 === 1) return count + ' операция';
+      if (n1 >= 2 && n1 <= 4) return count + ' операции';
+      return count + ' операций';
+    }
+
+    /** Раскрытие / сворачивание истории */
+    function setHistoryExpanded(expanded) {
+      historyExpanded = expanded;
+      historyToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      historyAccordion.classList.toggle('is-open', expanded);
+    }
+
+    function toggleHistoryAccordion() {
+      setHistoryExpanded(!historyExpanded);
     }
 
     /** Генерация уникального id операции */
@@ -1346,6 +1457,7 @@
       // Сортировка: новые сверху
       const sorted = [...monthOps].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 
+      historyCountEl.textContent = pluralOperations(monthOps.length);
       historyList.innerHTML = '';
 
       if (sorted.length === 0) {
@@ -1757,6 +1869,10 @@
 
       // Очистка месяца
       clearMonthBtn.addEventListener('click', clearSelectedMonth);
+
+      // Accordion истории
+      historyToggle.addEventListener('click', toggleHistoryAccordion);
+      setHistoryExpanded(false);
 
       renderAll();
     }
