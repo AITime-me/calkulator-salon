@@ -543,6 +543,231 @@
       from { opacity: 1; }
       to   { opacity: 0; transform: translateY(-8px); }
     }
+
+    /* Аналитика */
+    .analytics-section { margin-top: 4px; }
+
+    .backup-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      padding: 8px 14px;
+    }
+    .btn-secondary:hover { border-color: var(--primary); background: var(--bg); }
+
+    .import-label {
+      display: inline-flex;
+      cursor: pointer;
+    }
+    .import-label input[type="file"] { display: none; }
+
+    .key-months-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .key-month-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+    }
+
+    .key-month-item .km-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .key-month-item .km-value {
+      font-size: 0.88rem;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    .key-month-item .km-amount {
+      font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
+      margin-top: 2px;
+    }
+
+    .archive-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 10px;
+    }
+
+    .archive-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      font-family: inherit;
+      color: inherit;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    .archive-item:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow);
+    }
+
+    .archive-item.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--focus-ring);
+    }
+
+    .archive-item .arch-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-transform: capitalize;
+    }
+
+    .archive-item .arch-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      margin-bottom: 3px;
+      gap: 8px;
+    }
+
+    .archive-item .arch-row span:last-child {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .archive-item .arch-profit.positive { color: var(--profit); }
+    .archive-item .arch-profit.negative { color: var(--loss); }
+
+    .dynamics-wrap { overflow-x: auto; }
+
+    .dynamics-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      min-width: 720px;
+    }
+
+    .dynamics-table th,
+    .dynamics-table td {
+      padding: 8px 6px;
+      border-bottom: 1px solid var(--border);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      vertical-align: middle;
+    }
+
+    .dynamics-table th:first-child,
+    .dynamics-table td:first-child {
+      text-align: left;
+      text-transform: capitalize;
+    }
+
+    .dynamics-table th {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: none;
+      white-space: nowrap;
+    }
+
+    .dynamics-table tr:last-child td { border-bottom: none; }
+
+    .dynamics-table tr.active-month td:first-child {
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .trend-good { color: var(--income); font-weight: 600; }
+    .trend-bad { color: var(--expense); font-weight: 600; }
+
+    .charts-block { margin-top: 16px; }
+
+    .charts-block h3 {
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--text-muted);
+    }
+
+    .chart-group { margin-bottom: 16px; }
+    .chart-group:last-child { margin-bottom: 0; }
+
+    .chart-group-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .chart-group-title.income-title { color: var(--income); }
+    .chart-group-title.expense-title { color: var(--expense); }
+    .chart-group-title.profit-title { color: var(--profit); }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 100px 1fr 80px;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 0.75rem;
+    }
+
+    .bar-row:last-child { margin-bottom: 0; }
+
+    .bar-label {
+      color: var(--text-muted);
+      text-transform: capitalize;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bar-track {
+      height: 10px;
+      background: var(--bg);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 5px;
+      min-width: 2px;
+      transition: width .3s ease;
+    }
+
+    .bar-fill.income-fill { background: var(--income); }
+    .bar-fill.expense-fill { background: var(--expense); }
+    .bar-fill.profit-fill { background: var(--profit); }
+    .bar-fill.loss-fill { background: var(--loss); }
+
+    .bar-value {
+      text-align: right;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .section-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
@@ -698,6 +923,73 @@
         </div>
       </div>
     </div>
+
+    <div class="analytics-section">
+      <!-- Резервное копирование -->
+      <div class="card">
+        <div class="card-title">Резервное копирование</div>
+        <p class="section-hint">Сохраните все операции в файл или восстановите из резервной копии.</p>
+        <div class="backup-actions">
+          <button type="button" class="btn btn-secondary" id="export-btn">Скачать резервную копию JSON</button>
+          <label class="btn btn-secondary import-label">
+            Загрузить резервную копию JSON
+            <input type="file" id="import-input" accept=".json,application/json">
+          </label>
+        </div>
+      </div>
+
+      <!-- Ключевые месяцы -->
+      <div class="card">
+        <div class="card-title">Ключевые месяцы</div>
+        <div class="key-months-grid" id="key-months-grid"></div>
+        <div class="empty-state" id="key-months-empty" hidden>Нет данных для анализа. Добавьте операции.</div>
+      </div>
+
+      <!-- Архив месяцев -->
+      <div class="card">
+        <div class="card-title">Архив месяцев</div>
+        <p class="section-hint">Нажмите на месяц, чтобы переключиться.</p>
+        <div class="archive-grid" id="archive-grid"></div>
+        <div class="empty-state" id="archive-empty" hidden>Операций пока нет.</div>
+      </div>
+
+      <!-- Динамика по месяцам -->
+      <div class="card">
+        <div class="card-title">Динамика по месяцам</div>
+        <div class="dynamics-wrap">
+          <table class="dynamics-table" id="dynamics-table">
+            <thead>
+              <tr>
+                <th>Месяц</th>
+                <th>Доходы</th>
+                <th>Расходы</th>
+                <th>Чистая прибыль</th>
+                <th>Δ доходы</th>
+                <th>Δ расходы</th>
+                <th>Δ прибыль</th>
+              </tr>
+            </thead>
+            <tbody id="dynamics-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="dynamics-empty" hidden>Нет данных для таблицы динамики.</div>
+        <div class="charts-block" id="charts-block" hidden>
+          <h3>Визуальная динамика</h3>
+          <div class="chart-group">
+            <div class="chart-group-title income-title">Доходы по месяцам</div>
+            <div id="chart-income"></div>
+          </div>
+          <div class="chart-group">
+            <div class="chart-group-title expense-title">Расходы по месяцам</div>
+            <div id="chart-expense"></div>
+          </div>
+          <div class="chart-group">
+            <div class="chart-group-title profit-title">Чистая прибыль по месяцам</div>
+            <div id="chart-profit"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="toast-container" id="toast-container"></div>
@@ -723,6 +1015,8 @@
     const netProfitEl = document.getElementById('net-profit');
     const toastContainer = document.getElementById('toast-container');
     const themeToggleBtn = document.getElementById('theme-toggle');
+    const exportBtn = document.getElementById('export-btn');
+    const importInput = document.getElementById('import-input');
 
     // ─── Утилиты ─────────────────────────────────────────────────
 
@@ -762,6 +1056,75 @@
     function formatDate(dateStr) {
       const [y, m, d] = dateStr.split('-');
       return `${d}.${m}.${y}`;
+    }
+
+    /** Форматирование названия месяца */
+    function formatMonthLabel(monthKey) {
+      const [y, m] = monthKey.split('-');
+      const date = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
+      const label = date.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+      return label.charAt(0).toUpperCase() + label.slice(1);
+    }
+
+    /** Краткое название месяца для графиков */
+    function formatMonthShort(monthKey) {
+      const [y, m] = monthKey.split('-');
+      const date = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
+      return date.toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' });
+    }
+
+    /** Все месяцы с операциями, отсортированные по возрастанию */
+    function getAllMonthKeys() {
+      const keys = new Set();
+      operations.forEach(op => keys.add(getMonthKey(op.date)));
+      return Array.from(keys).sort();
+    }
+
+    /** Статистика по каждому месяцу */
+    function getAllMonthStats() {
+      return getAllMonthKeys().map(monthKey => {
+        const monthOps = getOperationsForMonth(monthKey);
+        const s = calculateSummary(monthOps);
+        return { monthKey, ...s };
+      });
+    }
+
+    /** Форматирование изменения к предыдущему месяцу */
+    function formatChange(current, previous, metric) {
+      if (previous === null || previous === undefined) {
+        return { text: '—', className: '' };
+      }
+
+      const diff = current - previous;
+      if (diff === 0) {
+        return { text: '0% (0 ₽)', className: '' };
+      }
+
+      const pct = previous !== 0
+        ? (diff / Math.abs(previous)) * 100
+        : (current !== 0 ? 100 : 0);
+      const sign = diff > 0 ? '+' : '';
+      const text = `${sign}${pct.toFixed(1)}% (${sign}${formatMoney(diff)})`;
+
+      let className = '';
+      if (metric === 'income') {
+        className = diff > 0 ? 'trend-good' : 'trend-bad';
+      } else if (metric === 'expense') {
+        className = diff > 0 ? 'trend-bad' : 'trend-good';
+      } else if (metric === 'profit') {
+        className = diff > 0 ? 'trend-good' : 'trend-bad';
+      }
+
+      return { text, className };
+    }
+
+    /** Переключение на выбранный месяц */
+    function switchToMonth(monthKey, showNotification) {
+      budgetMonthInput.value = monthKey;
+      renderAll();
+      if (showNotification) {
+        showToast('Месяц: ' + formatMonthLabel(monthKey));
+      }
     }
 
     /** Генерация уникального id операции */
@@ -1022,6 +1385,253 @@
       renderSummary();
       renderHistory();
       renderBreakdown();
+      renderAnalytics();
+    }
+
+    // ─── Аналитика ───────────────────────────────────────────────
+
+    function renderKeyMonths() {
+      const grid = document.getElementById('key-months-grid');
+      const empty = document.getElementById('key-months-empty');
+      const stats = getAllMonthStats();
+
+      if (stats.length === 0) {
+        grid.innerHTML = '';
+        empty.hidden = false;
+        return;
+      }
+
+      empty.hidden = true;
+
+      const bestProfit = stats.reduce((a, b) => b.netProfit > a.netProfit ? b : a);
+      const bestIncome = stats.reduce((a, b) => b.totalIncome > a.totalIncome ? b : a);
+      const bestExpense = stats.reduce((a, b) => b.totalWithRent > a.totalWithRent ? b : a);
+      const avgProfit = stats.reduce((sum, s) => sum + s.netProfit, 0) / stats.length;
+
+      grid.innerHTML = `
+        <div class="key-month-item">
+          <div class="km-label">Лучший месяц по прибыли</div>
+          <div class="km-value">${formatMonthLabel(bestProfit.monthKey)}</div>
+          <div class="km-amount">${formatMoney(bestProfit.netProfit)}</div>
+        </div>
+        <div class="key-month-item">
+          <div class="km-label">Самый высокий доход</div>
+          <div class="km-value">${formatMonthLabel(bestIncome.monthKey)}</div>
+          <div class="km-amount">${formatMoney(bestIncome.totalIncome)}</div>
+        </div>
+        <div class="key-month-item">
+          <div class="km-label">Самые высокие расходы</div>
+          <div class="km-value">${formatMonthLabel(bestExpense.monthKey)}</div>
+          <div class="km-amount">${formatMoney(bestExpense.totalWithRent)}</div>
+        </div>
+        <div class="key-month-item">
+          <div class="km-label">Средняя чистая прибыль</div>
+          <div class="km-value">${stats.length} мес.</div>
+          <div class="km-amount">${formatMoney(avgProfit)}</div>
+        </div>
+      `;
+    }
+
+    function renderArchive() {
+      const grid = document.getElementById('archive-grid');
+      const empty = document.getElementById('archive-empty');
+      const stats = getAllMonthStats();
+      const selected = getSelectedMonth();
+
+      if (stats.length === 0) {
+        grid.innerHTML = '';
+        empty.hidden = false;
+        return;
+      }
+
+      empty.hidden = true;
+      grid.innerHTML = '';
+
+      stats.slice().reverse().forEach(s => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'archive-item' + (s.monthKey === selected ? ' active' : '');
+        const profitClass = s.netProfit >= 0 ? 'positive' : 'negative';
+        btn.innerHTML = `
+          <div class="arch-title">${formatMonthLabel(s.monthKey)}</div>
+          <div class="arch-row"><span>Доход</span><span style="color:var(--income)">${formatMoney(s.totalIncome)}</span></div>
+          <div class="arch-row"><span>Расход</span><span style="color:var(--expense)">${formatMoney(s.totalWithRent)}</span></div>
+          <div class="arch-row arch-profit ${profitClass}"><span>Прибыль</span><span>${formatMoney(s.netProfit)}</span></div>
+        `;
+        btn.addEventListener('click', () => switchToMonth(s.monthKey, true));
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderDynamicsTable() {
+      const tbody = document.getElementById('dynamics-body');
+      const empty = document.getElementById('dynamics-empty');
+      const wrap = document.querySelector('.dynamics-wrap');
+      const stats = getAllMonthStats();
+      const selected = getSelectedMonth();
+
+      if (stats.length === 0) {
+        tbody.innerHTML = '';
+        empty.hidden = false;
+        wrap.hidden = true;
+        return;
+      }
+
+      empty.hidden = true;
+      wrap.hidden = false;
+      tbody.innerHTML = '';
+
+      stats.forEach((s, i) => {
+        const prev = i > 0 ? stats[i - 1] : null;
+        const incomeCh = formatChange(s.totalIncome, prev ? prev.totalIncome : null, 'income');
+        const expenseCh = formatChange(s.totalWithRent, prev ? prev.totalWithRent : null, 'expense');
+        const profitCh = formatChange(s.netProfit, prev ? prev.netProfit : null, 'profit');
+
+        const tr = document.createElement('tr');
+        if (s.monthKey === selected) tr.classList.add('active-month');
+        tr.innerHTML = `
+          <td>${formatMonthLabel(s.monthKey)}</td>
+          <td>${formatMoney(s.totalIncome)}</td>
+          <td>${formatMoney(s.totalWithRent)}</td>
+          <td>${formatMoney(s.netProfit)}</td>
+          <td class="${incomeCh.className}">${incomeCh.text}</td>
+          <td class="${expenseCh.className}">${expenseCh.text}</td>
+          <td class="${profitCh.className}">${profitCh.text}</td>
+        `;
+        tr.addEventListener('click', () => switchToMonth(s.monthKey, true));
+        tr.style.cursor = 'pointer';
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderBarChart(containerId, stats, valueKey, fillClass, useAbsMax) {
+      const container = document.getElementById(containerId);
+      const values = stats.map(s => s[valueKey]);
+      const maxVal = useAbsMax
+        ? Math.max(...values.map(v => Math.abs(v)), 1)
+        : Math.max(...values, 1);
+
+      container.innerHTML = stats.map(s => {
+        const val = s[valueKey];
+        let width;
+        let fill = fillClass;
+
+        if (useAbsMax && val < 0) {
+          width = (Math.abs(val) / maxVal) * 100;
+          fill = 'loss-fill';
+        } else {
+          width = (Math.abs(val) / maxVal) * 100;
+        }
+
+        return `
+          <div class="bar-row">
+            <span class="bar-label" title="${formatMonthLabel(s.monthKey)}">${formatMonthShort(s.monthKey)}</span>
+            <div class="bar-track"><div class="bar-fill ${fill}" style="width:${width}%"></div></div>
+            <span class="bar-value">${formatMoney(val)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderBarCharts() {
+      const block = document.getElementById('charts-block');
+      const stats = getAllMonthStats();
+
+      if (stats.length === 0) {
+        block.hidden = true;
+        return;
+      }
+
+      block.hidden = false;
+      renderBarChart('chart-income', stats, 'totalIncome', 'income-fill', false);
+      renderBarChart('chart-expense', stats, 'totalWithRent', 'expense-fill', false);
+      renderBarChart('chart-profit', stats, 'netProfit', 'profit-fill', true);
+    }
+
+    function renderAnalytics() {
+      renderKeyMonths();
+      renderArchive();
+      renderDynamicsTable();
+      renderBarCharts();
+    }
+
+    // ─── Экспорт / импорт ────────────────────────────────────────
+
+    function validateImportOperations(data) {
+      if (!Array.isArray(data)) {
+        return { valid: false, error: 'Файл должен содержать массив операций.' };
+      }
+
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+      for (let i = 0; i < data.length; i++) {
+        const op = data[i];
+        const n = i + 1;
+
+        if (!op || typeof op !== 'object') {
+          return { valid: false, error: `Операция ${n}: некорректный формат.` };
+        }
+        if (!op.id || typeof op.id !== 'string') {
+          return { valid: false, error: `Операция ${n}: отсутствует id.` };
+        }
+        if (op.type !== 'income' && op.type !== 'expense') {
+          return { valid: false, error: `Операция ${n}: type должен быть income или expense.` };
+        }
+        if (!op.date || !dateRegex.test(op.date)) {
+          return { valid: false, error: `Операция ${n}: date должна быть в формате YYYY-MM-DD.` };
+        }
+        if (!op.category || typeof op.category !== 'string') {
+          return { valid: false, error: `Операция ${n}: отсутствует category.` };
+        }
+        if (typeof op.amount !== 'number' || isNaN(op.amount) || op.amount <= 0) {
+          return { valid: false, error: `Операция ${n}: amount должен быть числом больше 0.` };
+        }
+      }
+
+      return { valid: true, data };
+    }
+
+    function exportBackup() {
+      const blob = new Blob([JSON.stringify(operations, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'salon-budget-backup-' + getCurrentMonthKey() + '.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('Резервная копия скачана');
+    }
+
+    function importBackup(file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          const result = validateImportOperations(parsed);
+
+          if (!result.valid) {
+            alert(result.error);
+            return;
+          }
+
+          const count = result.data.length;
+          const msg = count === 0
+            ? 'Файл не содержит операций. Заменить текущие данные пустым списком?'
+            : `Загрузить ${count} операций? Текущие данные будут заменены.`;
+
+          if (!confirm(msg)) return;
+
+          operations = result.data;
+          saveOperations();
+          renderAll();
+          showToast('Данные восстановлены');
+        } catch {
+          alert('Не удалось прочитать JSON-файл. Проверьте формат.');
+        }
+      };
+      reader.readAsText(file);
     }
 
     // ─── CRUD операций ───────────────────────────────────────────
@@ -1125,8 +1735,21 @@
       document.getElementById('income-date').value = today;
       document.getElementById('expense-date').value = today;
 
-      // Смена месяца — пересчёт
-      budgetMonthInput.addEventListener('change', renderAll);
+      // Смена месяца — пересчёт и уведомление
+      budgetMonthInput.addEventListener('change', () => {
+        renderAll();
+        showToast('Месяц: ' + formatMonthLabel(getSelectedMonth()));
+      });
+
+      // Резервное копирование
+      exportBtn.addEventListener('click', exportBackup);
+      importInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          importBackup(file);
+          importInput.value = '';
+        }
+      });
 
       // Формы
       handleFormSubmit('income', incomeForm, 'income');
@@ -1140,7 +1763,5 @@
 
     init();
   </script>
-</body>
-</html>
 </body>
 </html>
