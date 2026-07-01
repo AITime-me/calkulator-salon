@@ -1527,6 +1527,15 @@
 
     .promo-quick-calc-card {
       margin-bottom: 16px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .promo-quick-calc-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
     }
 
     .promo-calc-type-row {
@@ -2128,7 +2137,10 @@
               <div class="field-error" id="promo-quick-price-error"></div>
             </div>
           </div>
-          <button type="submit" class="btn btn-primary" style="margin-top:8px">Рассчитать акцию</button>
+          <div class="promo-quick-calc-actions">
+            <button type="submit" class="btn btn-primary" id="promo-quick-calc-submit-btn" disabled>Рассчитать акцию</button>
+            <button type="button" class="btn btn-secondary" id="promo-quick-calc-clear-btn">Очистить</button>
+          </div>
         </form>
         <div id="promo-quick-calc-result" class="promo-calc-result" hidden></div>
       </div>
@@ -4909,6 +4921,7 @@
       savePromoEconomics();
       editingPromoEconomicsId = null;
       renderPromoEconomics();
+      refreshPromoQuickCalcProcedureOptions();
       showToast('Запись сохранена');
       return true;
     }
@@ -4930,6 +4943,7 @@
       }
       savePromoEconomics();
       renderPromoEconomics();
+      refreshPromoQuickCalcProcedureOptions();
     }
 
     function syncPromoEconomicsFromProcedures() {
@@ -4945,6 +4959,7 @@
       });
       savePromoEconomics();
       renderPromoEconomics();
+      refreshPromoQuickCalcProcedureOptions();
       showToast(added ? 'Добавлено новых процедур: ' + added : 'Новых процедур не найдено');
     }
 
@@ -4970,7 +4985,9 @@
       promoProcedureEconomics = [];
       editingPromoEconomicsId = null;
       seedPromoEconomicsFromProcedures();
+      clearPromoQuickCalc();
       renderPromoEconomics();
+      refreshPromoQuickCalcProcedureOptions();
       renderAll();
       showToast('Справочник экономики акций пересоздан');
     }
@@ -5130,12 +5147,11 @@
           renderPromoEconomics();
         });
       });
-
-      renderPromoQuickCalc();
     }
 
     function initPromoEconomics() {
       loadPromoEconomics();
+      initPromoQuickCalc();
       renderPromoEconomics();
 
       document.getElementById('promo-economics-search')?.addEventListener('input', e => {
@@ -5156,12 +5172,13 @@
       document.getElementById('promo-economics-sync-btn')?.addEventListener('click', syncPromoEconomicsFromProcedures);
       document.getElementById('promo-economics-fill40-btn')?.addEventListener('click', fillPromoDefault40Percent);
       document.getElementById('promo-economics-reset-btn')?.addEventListener('click', resetPromoEconomics);
-      initPromoQuickCalc();
     }
 
     // ─── Быстрый расчёт акции ────────────────────────────────────
 
+    let promoQuickCalcInitialized = false;
     let promoQuickCalcResultVisible = false;
+    let promoQuickCalcLastOptionsKey = '';
 
     function getPromoCalcEligibleProcedures() {
       return promoProcedureEconomics
@@ -5195,7 +5212,13 @@
       if (priceField) priceField.hidden = type !== 'price';
     }
 
-    function renderPromoQuickCalcSelect() {
+    function getPromoQuickCalcOptionsKey() {
+      return getPromoCalcEligibleProcedures()
+        .map(e => `${e.id}:${e.basePrice}:${e.canUseInPromos}:${e.isActive !== false}`)
+        .join('|');
+    }
+
+    function refreshPromoQuickCalcProcedureOptions() {
       const select = document.getElementById('promo-quick-procedure');
       const emptyEl = document.getElementById('promo-quick-calc-empty');
       const form = document.getElementById('promo-quick-calc-form');
@@ -5208,19 +5231,79 @@
         if (emptyEl) emptyEl.hidden = false;
         if (form) form.hidden = true;
         select.innerHTML = '';
+        promoQuickCalcLastOptionsKey = '';
+        updatePromoQuickCalcSubmitState();
         return;
       }
 
       if (emptyEl) emptyEl.hidden = true;
       if (form) form.hidden = false;
 
-      select.innerHTML = eligible.map(e =>
-        `<option value="${escapeHtml(e.id)}">${escapeHtml(e.procedureName)} — ${formatMoney(e.basePrice)}</option>`
-      ).join('');
+      const optionsKey = getPromoQuickCalcOptionsKey();
+      if (optionsKey !== promoQuickCalcLastOptionsKey) {
+        select.innerHTML = '<option value="">Выберите процедуру</option>' +
+          eligible.map(e =>
+            `<option value="${escapeHtml(e.id)}">${escapeHtml(e.procedureName)} — ${formatMoney(e.basePrice)}</option>`
+          ).join('');
+        promoQuickCalcLastOptionsKey = optionsKey;
+      }
 
       if (prevId && eligible.some(e => e.id === prevId)) {
         select.value = prevId;
+      } else if (!eligible.some(e => e.id === select.value)) {
+        select.value = '';
       }
+
+      updatePromoQuickCalcSubmitState();
+    }
+
+    function updatePromoQuickCalcSubmitState() {
+      const btn = document.getElementById('promo-quick-calc-submit-btn');
+      if (!btn) return;
+
+      const entry = getSelectedPromoCalcEntry();
+      if (!entry) {
+        btn.disabled = true;
+        return;
+      }
+
+      const calcType = getPromoQuickCalcType();
+      if (calcType === 'percent') {
+        const raw = parseFloat(document.getElementById('promo-quick-discount')?.value);
+        btn.disabled = isNaN(raw) || raw < 0 || raw > 100;
+        return;
+      }
+
+      const priceInput = document.getElementById('promo-quick-promo-price');
+      const raw = parseFloat(priceInput?.value);
+      const hasValue = priceInput?.value !== '' && !isNaN(raw) && raw >= 0;
+      btn.disabled = !hasValue || raw > entry.basePrice;
+    }
+
+    function clearPromoQuickCalc() {
+      promoQuickCalcResultVisible = false;
+
+      const select = document.getElementById('promo-quick-procedure');
+      const discount = document.getElementById('promo-quick-discount');
+      const promoPrice = document.getElementById('promo-quick-promo-price');
+      const resultEl = document.getElementById('promo-quick-calc-result');
+      const priceErrorEl = document.getElementById('promo-quick-price-error');
+      const priceFieldEl = document.getElementById('promo-quick-price-field');
+      const percentRadio = document.querySelector('input[name="promo-calc-type"][value="percent"]');
+
+      if (select) select.value = '';
+      if (discount) discount.value = '10';
+      if (promoPrice) promoPrice.value = '';
+      if (percentRadio) percentRadio.checked = true;
+      if (resultEl) {
+        resultEl.hidden = true;
+        resultEl.innerHTML = '';
+      }
+      if (priceErrorEl) priceErrorEl.textContent = '';
+      if (priceFieldEl) priceFieldEl.classList.remove('error');
+
+      updatePromoQuickCalcTypeUi();
+      updatePromoQuickCalcSubmitState();
     }
 
     function getSelectedPromoCalcEntry() {
@@ -5350,23 +5433,23 @@
     function runPromoQuickCalc() {
       const result = calculatePromoQuickCalc();
       if (result) renderPromoQuickCalcResult(result);
-    }
-
-    function renderPromoQuickCalc() {
-      renderPromoQuickCalcSelect();
-      if (promoQuickCalcResultVisible) {
-        const result = calculatePromoQuickCalc();
-        if (result) renderPromoQuickCalcResult(result);
-      }
+      updatePromoQuickCalcSubmitState();
     }
 
     function initPromoQuickCalc() {
+      if (promoQuickCalcInitialized) {
+        refreshPromoQuickCalcProcedureOptions();
+        return;
+      }
+      promoQuickCalcInitialized = true;
+
       updatePromoQuickCalcTypeUi();
-      renderPromoQuickCalcSelect();
+      refreshPromoQuickCalcProcedureOptions();
 
       document.querySelectorAll('input[name="promo-calc-type"]').forEach(radio => {
         radio.addEventListener('change', () => {
           updatePromoQuickCalcTypeUi();
+          updatePromoQuickCalcSubmitState();
           if (promoQuickCalcResultVisible) runPromoQuickCalc();
         });
       });
@@ -5376,11 +5459,15 @@
         runPromoQuickCalc();
       });
 
+      document.getElementById('promo-quick-calc-clear-btn')?.addEventListener('click', clearPromoQuickCalc);
+
       ['promo-quick-procedure', 'promo-quick-discount', 'promo-quick-promo-price'].forEach(id => {
         document.getElementById(id)?.addEventListener('input', () => {
+          updatePromoQuickCalcSubmitState();
           if (promoQuickCalcResultVisible) runPromoQuickCalc();
         });
         document.getElementById(id)?.addEventListener('change', () => {
+          updatePromoQuickCalcSubmitState();
           if (promoQuickCalcResultVisible) runPromoQuickCalc();
         });
       });
