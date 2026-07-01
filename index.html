@@ -170,6 +170,138 @@
       color: var(--text);
     }
 
+    .month-picker-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .header-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+      max-width: 220px;
+    }
+
+    /* Вкладки */
+    .tabs-nav {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      margin-bottom: 20px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+
+    .tabs-nav::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .tabs-nav::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      box-shadow: var(--shadow);
+      transition: background .15s, border-color .15s, color .15s;
+    }
+
+    .tab-btn:hover {
+      border-color: var(--primary);
+      color: var(--text);
+    }
+
+    .tab-btn.is-active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .tab-btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.is-active {
+      display: block;
+    }
+
+    .tab-panel-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .placeholder-card {
+      text-align: center;
+      padding: 36px 24px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.65;
+    }
+
+    .placeholder-card p {
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .settings-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .settings-row:last-child {
+      border-bottom: none;
+    }
+
+    .settings-label {
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+
+    .settings-desc {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .field-hint.fot-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: -6px;
+      margin-bottom: 12px;
+      padding: 8px 10px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      border-left: 3px solid var(--primary);
+    }
+
     /* Карточки */
     .card {
       background: var(--surface);
@@ -847,9 +979,12 @@
     <header class="header">
       <h1>Месячный бюджет салона</h1>
       <div class="header-controls">
-        <div class="month-picker">
-          <label for="budget-month">Месяц бюджета</label>
-          <input type="month" id="budget-month">
+        <div class="month-picker-wrap">
+          <div class="month-picker">
+            <label for="budget-month">Месяц бюджета</label>
+            <input type="month" id="budget-month">
+          </div>
+          <p class="header-hint">Все итоги и история показываются за выбранный месяц</p>
         </div>
         <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Переключить на тёмную тему" title="Тёмная тема">
           <span class="theme-icon theme-icon-light" aria-hidden="true">🌙</span>
@@ -858,14 +993,27 @@
       </div>
     </header>
 
-    <!-- Карточка чистой прибыли — самая заметная -->
-    <div class="profit-card positive" id="profit-card">
-      <div class="profit-label">Чистая прибыль</div>
-      <div class="profit-value" id="net-profit">0 ₽</div>
-    </div>
+    <nav class="tabs-nav" role="tablist" aria-label="Разделы рабочего кабинета">
+      <button type="button" class="tab-btn is-active" role="tab" id="tab-btn-dashboard" data-tab="dashboard" aria-selected="true" aria-controls="tab-dashboard">Дашборд</button>
+      <button type="button" class="tab-btn" role="tab" id="tab-btn-operations" data-tab="operations" aria-selected="false" aria-controls="tab-operations">Операции</button>
+      <button type="button" class="tab-btn" role="tab" id="tab-btn-analytics" data-tab="analytics" aria-selected="false" aria-controls="tab-analytics">Аналитика</button>
+      <button type="button" class="tab-btn" role="tab" id="tab-btn-salaries" data-tab="salaries" aria-selected="false" aria-controls="tab-salaries">Зарплаты</button>
+      <button type="button" class="tab-btn" role="tab" id="tab-btn-categories" data-tab="categories" aria-selected="false" aria-controls="tab-categories">Категории</button>
+      <button type="button" class="tab-btn" role="tab" id="tab-btn-promotions" data-tab="promotions" aria-selected="false" aria-controls="tab-promotions">Акции</button>
+      <button type="button" class="tab-btn" role="tab" id="tab-btn-okr" data-tab="okr" aria-selected="false" aria-controls="tab-okr">OKR</button>
+      <button type="button" class="tab-btn" role="tab" id="tab-btn-archive" data-tab="archive" aria-selected="false" aria-controls="tab-archive">Архив</button>
+      <button type="button" class="tab-btn" role="tab" id="tab-btn-settings" data-tab="settings" aria-selected="false" aria-controls="tab-settings">Настройки</button>
+    </nav>
 
-    <!-- Итоги за месяц -->
-    <div class="summary-grid" id="summary-grid">
+    <!-- Дашборд -->
+    <section class="tab-panel is-active" id="tab-dashboard" role="tabpanel" aria-labelledby="tab-btn-dashboard">
+      <div class="profit-card positive" id="profit-card">
+        <div class="profit-label">Чистая прибыль</div>
+        <div class="profit-value" id="net-profit">0 ₽</div>
+      </div>
+      <p class="section-hint">В будущем здесь появится живой ФОТ и управленческая прибыль.</p>
+
+      <div class="summary-grid" id="summary-grid">
       <div class="summary-item income">
         <div class="label">Общий доход</div>
         <div class="value" id="total-income">0 ₽</div>
@@ -891,8 +1039,10 @@
         <div class="value" id="total-with-rent">0 ₽</div>
       </div>
     </div>
+    </section>
 
-    <!-- Формы добавления -->
+    <!-- Операции -->
+    <section class="tab-panel" id="tab-operations" role="tabpanel" aria-labelledby="tab-btn-operations" hidden>
     <div class="forms-row">
       <div class="card form-card income-card">
         <h2>Добавить доход</h2>
@@ -900,7 +1050,7 @@
           <div class="field" id="income-date-field">
             <label for="income-date">Дата</label>
             <input type="date" id="income-date">
-            <div class="hint">Дата совершения операции</div>
+            <div class="hint">Операция автоматически попадёт в месяц по выбранной дате</div>
             <div class="field-error" id="income-date-error"></div>
           </div>
           <div class="field" id="income-category-field">
@@ -929,7 +1079,7 @@
           <div class="field" id="expense-date-field">
             <label for="expense-date">Дата</label>
             <input type="date" id="expense-date">
-            <div class="hint">Дата совершения операции</div>
+            <div class="hint">Операция автоматически попадёт в месяц по выбранной дате</div>
             <div class="field-error" id="expense-date-error"></div>
           </div>
           <div class="field" id="expense-category-field">
@@ -957,6 +1107,9 @@
             </select>
             <div class="hint">Статья расхода</div>
             <div class="field-error" id="expense-category-error"></div>
+          </div>
+          <div class="field-hint fot-hint" id="expense-fot-hint" hidden>
+            Фонд оплаты труда лучше добавлять итоговой суммой после расчёта зарплат
           </div>
           <div class="field" id="expense-amount-field">
             <label for="expense-amount">Сумма, ₽</label>
@@ -996,8 +1149,10 @@
         </div>
       </div>
     </div>
+    </section>
 
-    <!-- Расшифровка по категориям -->
+    <!-- Аналитика -->
+    <section class="tab-panel" id="tab-analytics" role="tabpanel" aria-labelledby="tab-btn-analytics" hidden>
     <div class="card">
       <div class="card-title">Расшифровка по категориям</div>
       <div class="breakdown-grid">
@@ -1013,19 +1168,6 @@
     </div>
 
     <div class="analytics-section">
-      <!-- Резервное копирование -->
-      <div class="card">
-        <div class="card-title">Резервное копирование</div>
-        <p class="section-hint">Сохраните все операции в файл или восстановите из резервной копии.</p>
-        <div class="backup-actions">
-          <button type="button" class="btn btn-secondary" id="export-btn">Скачать резервную копию JSON</button>
-          <label class="btn btn-secondary import-label">
-            Загрузить резервную копию JSON
-            <input type="file" id="import-input" accept=".json,application/json">
-          </label>
-        </div>
-      </div>
-
       <!-- Ключевые месяцы -->
       <div class="card">
         <div class="card-title">Ключевые месяцы</div>
@@ -1078,6 +1220,69 @@
         </div>
       </div>
     </div>
+    </section>
+
+    <!-- Зарплаты -->
+    <section class="tab-panel" id="tab-salaries" role="tabpanel" aria-labelledby="tab-btn-salaries" hidden>
+      <div class="card placeholder-card">
+        <p>Здесь будет живой расчёт зарплат, ФОТ, косметики, уборки и менеджерских начислений.</p>
+      </div>
+    </section>
+
+    <!-- Категории -->
+    <section class="tab-panel" id="tab-categories" role="tabpanel" aria-labelledby="tab-btn-categories" hidden>
+      <div class="card placeholder-card">
+        <p>Здесь будет управление категориями доходов и расходов.</p>
+      </div>
+    </section>
+
+    <!-- Акции -->
+    <section class="tab-panel" id="tab-promotions" role="tabpanel" aria-labelledby="tab-btn-promotions" hidden>
+      <div class="card placeholder-card">
+        <p>Здесь будет расчёт эффективности акций.</p>
+      </div>
+    </section>
+
+    <!-- OKR -->
+    <section class="tab-panel" id="tab-okr" role="tabpanel" aria-labelledby="tab-btn-okr" hidden>
+      <div class="card placeholder-card">
+        <p>Здесь будут цели и ключевые результаты.</p>
+      </div>
+    </section>
+
+    <!-- Архив -->
+    <section class="tab-panel" id="tab-archive" role="tabpanel" aria-labelledby="tab-btn-archive" hidden>
+      <div class="card">
+        <div class="card-title">Резервное копирование</div>
+        <p class="section-hint">JSON-файл можно использовать для восстановления данных.</p>
+        <div class="backup-actions">
+          <button type="button" class="btn btn-secondary" id="export-btn">Скачать резервную копию JSON</button>
+          <label class="btn btn-secondary import-label">
+            Загрузить резервную копию JSON
+            <input type="file" id="import-input" accept=".json,application/json">
+          </label>
+        </div>
+      </div>
+      <div class="card placeholder-card">
+        <p>Здесь появится архив данных за выбранный период — месяцы, кварталы и годы в одном месте.</p>
+      </div>
+    </section>
+
+    <!-- Настройки -->
+    <section class="tab-panel" id="tab-settings" role="tabpanel" aria-labelledby="tab-btn-settings" hidden>
+      <div class="card">
+        <div class="card-title">Интерфейс</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Тема оформления</div>
+            <div class="settings-desc">Переключайте светлую и тёмную тему кнопкой в шапке</div>
+          </div>
+        </div>
+      </div>
+      <div class="card placeholder-card">
+        <p>Здесь появятся настройки салона, интеграции с Supabase и параметры рабочего кабинета.</p>
+      </div>
+    </section>
   </div>
 
   <div class="toast-container" id="toast-container"></div>
@@ -1086,12 +1291,15 @@
     // ─── Константы ───────────────────────────────────────────────
     const STORAGE_KEY = 'salon-budget-operations';
     const THEME_STORAGE_KEY = 'salon-budget-theme';
+    const TAB_STORAGE_KEY = 'salon-budget-active-tab';
+    const VALID_TABS = ['dashboard', 'operations', 'analytics', 'salaries', 'categories', 'promotions', 'okr', 'archive', 'settings'];
     const CATEGORY_FOT = 'Фонд оплаты труда';
     const CATEGORY_RENT = 'Аренда';
 
     // ─── Состояние ───────────────────────────────────────────────
     let operations = [];
     let historyExpanded = false;
+    let activeTab = 'dashboard';
 
     // ─── DOM-элементы ────────────────────────────────────────────
     const budgetMonthInput = document.getElementById('budget-month');
@@ -1238,6 +1446,45 @@
 
     function toggleHistoryAccordion() {
       setHistoryExpanded(!historyExpanded);
+    }
+
+    /** Переключение вкладок рабочего кабинета */
+    function switchTab(tabId) {
+      if (!VALID_TABS.includes(tabId)) return;
+
+      activeTab = tabId;
+      localStorage.setItem(TAB_STORAGE_KEY, tabId);
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        const isActive = btn.dataset.tab === tabId;
+        btn.classList.toggle('is-active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        const panelTab = panel.id.replace('tab-', '');
+        const isActive = panelTab === tabId;
+        panel.classList.toggle('is-active', isActive);
+        panel.hidden = !isActive;
+      });
+    }
+
+    function initTabs() {
+      const saved = localStorage.getItem(TAB_STORAGE_KEY);
+      const initial = VALID_TABS.includes(saved) ? saved : 'dashboard';
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+      });
+
+      switchTab(initial);
+    }
+
+    /** Подсказка при выборе категории ФОТ */
+    function updateFotHint() {
+      const select = document.getElementById('expense-category');
+      const hint = document.getElementById('expense-fot-hint');
+      hint.hidden = select.value !== CATEGORY_FOT;
     }
 
     /** Генерация уникального id операции */
@@ -1875,6 +2122,12 @@
       // Accordion истории
       historyToggle.addEventListener('click', toggleHistoryAccordion);
       setHistoryExpanded(false);
+
+      // Вкладки и подсказка ФОТ
+      initTabs();
+      const expenseCategorySelect = document.getElementById('expense-category');
+      expenseCategorySelect.addEventListener('change', updateFotHint);
+      updateFotHint();
 
       renderAll();
     }
