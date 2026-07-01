@@ -1310,6 +1310,16 @@
       margin: 12px 0;
     }
 
+    .csv-import-file-name {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .csv-import-clear-hint {
+      margin-top: 6px;
+    }
+
     .csv-import-preview {
       margin-top: 12px;
       padding: 12px;
@@ -1775,14 +1785,17 @@
                 <div class="field">
                   <label for="csv-import-file">CSV-файл</label>
                   <input type="file" id="csv-import-file" accept=".csv,text/csv,text/plain">
+                  <div class="csv-import-file-name" id="csv-import-file-name" hidden></div>
                 </div>
                 <div class="field">
                   <label for="csv-import-text">Или вставьте CSV-текст</label>
                   <textarea id="csv-import-text" class="csv-import-textarea" placeholder="date,procedure,master,service_revenue,master_payout&#10;2026-07-01,Буккальный массаж лица,Ксения,0,900"></textarea>
+                  <div class="hint csv-import-clear-hint">Если файл загружен неверно или CSV вставлен ошибочно, нажмите «Очистить импорт». Уже сохранённые процедуры не удалятся.</div>
                 </div>
                 <div class="csv-import-actions">
                   <button type="button" class="btn btn-secondary" id="csv-import-check-btn">Проверить CSV</button>
                   <button type="button" class="btn btn-primary" id="csv-import-run-btn" disabled>Импортировать корректные строки</button>
+                  <button type="button" class="btn btn-secondary" id="csv-import-clear-btn">Очистить импорт</button>
                 </div>
                 <div id="csv-import-preview" class="csv-import-preview" hidden></div>
               </div>
@@ -3840,6 +3853,13 @@
     // ─── Импорт процедур из CSV ───────────────────────────────────
 
     const CSV_REQUIRED_HEADERS = ['date', 'procedure', 'master', 'service_revenue', 'master_payout'];
+    const CSV_NEED_REVIEW_MESSAGES = {
+      date: 'Не определена дата процедуры',
+      procedure: 'Не определено название процедуры',
+      master: 'Не определён мастер',
+      service_revenue: 'Не определена выручка по услуге',
+      master_payout: 'Не определена выплата мастеру'
+    };
 
     function normalizeCsvHeader(header) {
       return (header || '').trim().toLowerCase().replace(/\s+/g, '_');
@@ -3893,6 +3913,58 @@
 
     function rowContainsNeedReview(cells) {
       return cells.some(cell => String(cell).includes('NEED_REVIEW'));
+    }
+
+    function formatNeedReviewReasons(reasons) {
+      if (!reasons.length) return 'Строка помечена NEED_REVIEW';
+      return reasons.map((reason, index) => {
+        if (index === 0) return reason;
+        return reason.charAt(0).toLowerCase() + reason.slice(1);
+      }).join('; ');
+    }
+
+    function getNeedReviewReasons(cells, colIndex) {
+      const reasons = [];
+      CSV_REQUIRED_HEADERS.forEach(key => {
+        const idx = colIndex[key];
+        if (idx === undefined || idx >= cells.length) return;
+        if (String(cells[idx]).includes('NEED_REVIEW')) {
+          reasons.push(CSV_NEED_REVIEW_MESSAGES[key]);
+        }
+      });
+      return reasons;
+    }
+
+    function updateCsvImportFileName() {
+      const fileInput = document.getElementById('csv-import-file');
+      const nameEl = document.getElementById('csv-import-file-name');
+      if (!fileInput || !nameEl) return;
+      const file = fileInput.files?.[0];
+      if (file) {
+        nameEl.textContent = 'Файл: ' + file.name;
+        nameEl.hidden = false;
+      } else {
+        nameEl.textContent = '';
+        nameEl.hidden = true;
+      }
+    }
+
+    function clearCsvImport(showNotification = true) {
+      const textEl = document.getElementById('csv-import-text');
+      const fileInput = document.getElementById('csv-import-file');
+      const previewEl = document.getElementById('csv-import-preview');
+      const importBtn = document.getElementById('csv-import-run-btn');
+
+      if (textEl) textEl.value = '';
+      if (fileInput) fileInput.value = '';
+      csvImportPreviewResult = null;
+      if (previewEl) {
+        previewEl.hidden = true;
+        previewEl.innerHTML = '';
+      }
+      if (importBtn) importBtn.disabled = true;
+      updateCsvImportFileName();
+      if (showNotification) showToast('Импорт очищен');
     }
 
     function getPayrollEntryFingerprint(entry) {
@@ -3950,7 +4022,12 @@
         result.totalRows++;
 
         if (rowContainsNeedReview(cells)) {
-          result.reviewRows.push({ lineNum, cells, reason: 'Строка помечена NEED_REVIEW' });
+          const reasons = getNeedReviewReasons(cells, colIndex);
+          result.reviewRows.push({
+            lineNum,
+            cells,
+            reason: formatNeedReviewReasons(reasons)
+          });
           continue;
         }
 
@@ -4122,13 +4199,7 @@
 
       savePayrollServiceEntries();
 
-      document.getElementById('csv-import-text').value = '';
-      const fileInput = document.getElementById('csv-import-file');
-      if (fileInput) fileInput.value = '';
-      csvImportPreviewResult = null;
-      document.getElementById('csv-import-preview').hidden = true;
-      document.getElementById('csv-import-preview').innerHTML = '';
-      document.getElementById('csv-import-run-btn').disabled = true;
+      clearCsvImport(false);
 
       if (getMonthKey(firstDate) !== getSelectedMonth()) {
         budgetMonthInput.value = getMonthKey(firstDate);
@@ -4177,9 +4248,17 @@
         importCsvProcedureRows(csvImportPreviewResult);
       });
 
+      document.getElementById('csv-import-clear-btn')?.addEventListener('click', () => {
+        clearCsvImport(true);
+      });
+
       document.getElementById('csv-import-file')?.addEventListener('change', e => {
         const file = e.target.files?.[0];
-        if (!file) return;
+        if (!file) {
+          updateCsvImportFileName();
+          return;
+        }
+        updateCsvImportFileName();
         const reader = new FileReader();
         reader.onload = () => {
           document.getElementById('csv-import-text').value = reader.result || '';
