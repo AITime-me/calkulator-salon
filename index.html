@@ -1450,6 +1450,81 @@
     }
 
     .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+    /* Экономика процедур для акций */
+    .promo-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .promo-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+      align-items: flex-end;
+    }
+
+    .promo-filters .field {
+      flex: 1;
+      min-width: 140px;
+      margin: 0;
+    }
+
+    .promo-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .promo-economics-table-wrap {
+      max-height: 420px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .promo-economics-table { font-size: 0.78rem; }
+
+    .promo-economics-table td {
+      max-width: 180px;
+      vertical-align: top;
+    }
+
+    .promo-meta { font-size: 0.72rem; color: var(--text-muted); }
+
+    .promo-meta-muted {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .promo-edit-row td {
+      background: var(--bg);
+      padding: 12px !important;
+    }
+
+    .promo-edit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+    }
+
+    .promo-edit-note { grid-column: 1 / -1; }
+
+    .promo-edit-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn-sm {
+      font-size: 0.78rem;
+      padding: 6px 12px;
+    }
+
   </style>
 </head>
 <body>
@@ -1901,10 +1976,40 @@
       </div>
     </section>
 
-    <!-- Акции -->
+<!-- Акции -->
     <section class="tab-panel" id="tab-promotions" role="tabpanel" aria-labelledby="tab-btn-promotions" hidden>
-      <div class="card placeholder-card">
-        <p>Здесь будет расчёт эффективности акций.</p>
+      <div class="card">
+        <div class="card-title">Экономика процедур для акций</div>
+        <p class="section-hint">Этот справочник нужен для расчёта акций. Чистая прибыль считается после расходных материалов и выплаты мастеру. Оплата менеджера не включена.</p>
+        <div id="promo-economics-summary"></div>
+        <div class="promo-filters">
+          <div class="field">
+            <label for="promo-economics-search">Поиск</label>
+            <input type="text" id="promo-economics-search" placeholder="Название или группа">
+          </div>
+          <div class="field">
+            <label for="promo-economics-group-filter">Группа</label>
+            <select id="promo-economics-group-filter" class="directory-role-select"></select>
+          </div>
+          <div class="field">
+            <label for="promo-economics-status-filter">Статус</label>
+            <select id="promo-economics-status-filter" class="directory-role-select">
+              <option value="all">Все</option>
+              <option value="in_promos">Участвуют в акциях</option>
+              <option value="excluded">Не участвуют в акциях</option>
+              <option value="no_price">Без стоимости</option>
+              <option value="pct40">40%</option>
+              <option value="pct50">50%</option>
+              <option value="fixed">Фиксированная прибыль</option>
+            </select>
+          </div>
+        </div>
+        <div class="promo-actions-row">
+          <button type="button" class="btn btn-secondary" id="promo-economics-sync-btn">Синхронизировать со справочником процедур</button>
+          <button type="button" class="btn btn-secondary" id="promo-economics-fill40-btn">Заполнить 40% по умолчанию</button>
+          <button type="button" class="btn btn-danger" id="promo-economics-reset-btn">Сбросить справочник экономики акций</button>
+        </div>
+        <div id="promo-economics-list"></div>
       </div>
     </section>
 
@@ -2034,6 +2139,83 @@
       cleaner: 'Уборка',
       other: 'Другое'
     };
+    const DEFAULT_PROMO_PRICES = [
+      { name: 'PRE-SistemPro / Ренювер PreSistemPro', basePrice: 2000, priceSource: 'Прайс сайта' },
+      { name: 'Безинъекционный ботокс', basePrice: 4500, priceSource: 'Прайс сайта' },
+      { name: 'Безинъекционный лифтинг', basePrice: 4500, priceSource: 'Прайс сайта' },
+      { name: 'Пептидное армирование лица', basePrice: 5500, priceSource: 'Прайс сайта' },
+      { name: 'Антивозрастной уход за шеей и декольте', basePrice: 3000, priceSource: 'Прайс сайта' },
+      { name: 'Комплекс «Формула сияния»', basePrice: 4500, priceSource: 'Прайс сайта' },
+      { name: 'Безинъекционная лазерная биоревитализация лица', basePrice: 2500, priceSource: 'Прайс сайта' },
+      { name: 'Безинъекционная лазерная биоревитализация лица при посещении курса, цена за 1 процедуру', basePrice: 2000, priceSource: 'Прайс сайта' },
+      { name: 'Ультразвуковая чистка лица / УЗ-чистка лица', basePrice: 2000, priceSource: 'Прайс сайта' },
+      { name: 'Альгинатная маска', basePrice: 800, priceSource: 'Прайс сайта' },
+      { name: 'Жёлтый пилинг с ретинолом', basePrice: 5000, priceSource: 'Прайс сайта' },
+      { name: 'Пилинг Revital от Skin Synergy', basePrice: 5500, priceSource: 'Прайс сайта' },
+      { name: 'Массаж лица по Жаке, разовый сеанс', basePrice: 1000, priceSource: 'Прайс сайта' },
+      { name: 'Массаж лица по Жаке, курс 10 сеансов', basePrice: 9000, priceSource: 'Прайс сайта' },
+      { name: 'Косметический массаж лица, курс 10 сеансов по 60 минут', basePrice: 13000, priceSource: 'Прайс сайта' },
+      { name: 'Буккальный массаж лица', basePrice: 2000, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма лица', basePrice: 8000, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма лба', basePrice: 4000, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма межбровного пространства', basePrice: 1000, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма верхних век', basePrice: 3500, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма нижних век', basePrice: 3500, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма нижней трети лица', basePrice: 6000, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма носогубных складок', basePrice: 4000, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма скул / щёк', basePrice: 6000, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма шеи', basePrice: 6000, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма декольте', basePrice: 6000, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма кистей рук', basePrice: 3000, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма губ', basePrice: 2500, priceSource: 'Прайс сайта' },
+      { name: 'Холодная плазма губ: кисетные морщины', basePrice: 3000, priceSource: 'Прайс сайта' },
+      { name: 'Безинъекционная лазерная биоревитализация для рук', basePrice: 2000, priceSource: 'Прайс сайта' },
+      { name: 'Уходовая неаппаратная процедура для гладкости и бархатистости кожи рук', basePrice: 500, priceSource: 'Прайс сайта' },
+      { name: 'Комплекс омоложения кожи рук', basePrice: 2500, priceSource: 'Прайс сайта' },
+      { name: 'Реконструкция ресниц Velvet / Вельвет ресниц', basePrice: 2500, priceSource: 'Прайс сайта' },
+      { name: 'Оформление бровей воском', basePrice: 500, priceSource: 'Прайс сайта' },
+      { name: 'Оформление бровей пинцетом', basePrice: 500, priceSource: 'Прайс сайта' },
+      { name: 'Окрашивание бровей', basePrice: 500, priceSource: 'Прайс сайта' },
+      { name: 'Окрашивание бровей хной / краской с коррекцией пинцетом или воском', basePrice: 1000, priceSource: 'Прайс сайта' },
+      { name: 'Долговременная укладка бровей с окрашиванием хной', basePrice: 2500, priceSource: 'Прайс сайта' },
+      { name: 'Перманентный макияж бровей в волосковой технике', basePrice: 7000, priceSource: 'Прайс сайта' },
+      { name: 'Перманентный макияж бровей в технике растушёвки', basePrice: 7000, priceSource: 'Прайс сайта' },
+      { name: 'Перманентный макияж бровей в комбинированной технике', basePrice: 7000, priceSource: 'Прайс сайта' },
+      { name: 'Перманентный макияж губ', basePrice: 8000, priceSource: 'Прайс сайта' },
+      { name: 'Перманентный макияж губ с биоревитализирующим компонентом', basePrice: 9000, priceSource: 'Прайс сайта' },
+      { name: 'Перманентный макияж межресничного пространства', basePrice: 6000, priceSource: 'Прайс сайта' },
+      { name: 'Перманентный макияж век: теневой эффект / стрелка', basePrice: 8000, priceSource: 'Прайс сайта' },
+      { name: 'Коррекция перманентного макияжа бровей', basePrice: 3500, priceSource: 'Прайс сайта' },
+      { name: 'Коррекция перманентного макияжа губ', basePrice: 4000, priceSource: 'Прайс сайта' },
+      { name: 'Коррекция межресничного пространства', basePrice: 3500, priceSource: 'Прайс сайта' },
+      { name: 'Коррекция перманентного макияжа век: теневой эффект / стрелка', basePrice: 4000, priceSource: 'Прайс сайта' },
+      { name: 'Рефреш перманентного макияжа бровей', basePrice: 6000, priceSource: 'Прайс сайта' },
+      { name: 'Рефреш перманентного макияжа губ', basePrice: 6000, priceSource: 'Прайс сайта' },
+      { name: 'Рефреш межресничного пространства', basePrice: 5000, priceSource: 'Прайс сайта' },
+      { name: 'Рефреш перманентного макияжа век: стрелочка с растушёвкой', basePrice: 6000, priceSource: 'Прайс сайта' },
+      { name: 'Удаление старого татуажа лазером', basePrice: 2000, priceSource: 'Прайс сайта' },
+      { name: 'Удаление тату лазером', basePrice: 2000, priceSource: 'Прайс сайта' },
+      { name: 'Удаление старого татуажа кислотным ремувером', basePrice: 2000, priceSource: 'Прайс сайта' },
+      { name: 'Осветление пигмента перед перекрытием или обновлением перманента', basePrice: 2000, priceSource: 'Прайс сайта' },
+      { name: 'Ручной массаж, 30 минут', basePrice: 1200, priceSource: 'Прайс сайта' },
+      { name: 'Ручной массаж, 60 минут', basePrice: 2000, priceSource: 'Прайс сайта' },
+      { name: 'Ручной массаж, 80 минут', basePrice: 2800, priceSource: 'Прайс сайта' },
+      { name: 'Ручной массаж, 80 минут при оплате курса, цена за 1 процедуру', basePrice: 2500, priceSource: 'Прайс сайта' },
+      { name: 'Ручной массаж, курс 10 сеансов по 60 минут', basePrice: 18000, priceSource: 'Прайс сайта' },
+      { name: 'Ручной массаж, курс 10 сеансов по 80 минут', basePrice: 25000, priceSource: 'Прайс сайта' },
+      { name: 'Ручной классический массаж всего тела, 40 минут', basePrice: 1650, priceSource: 'Прайс сайта' },
+      { name: 'Ручной классический массаж всего тела, 60 минут', basePrice: 2000, priceSource: 'Прайс сайта' },
+      { name: 'Ручной массаж всего тела, курс 10 сеансов по 40 минут', basePrice: 14500, priceSource: 'Прайс сайта' },
+      { name: 'Ручной массаж всего тела, курс 10 сеансов по 60 минут', basePrice: 18000, priceSource: 'Прайс сайта' },
+      { name: 'Массаж ШВЗ / ручной массаж шейно-воротниковой зоны', basePrice: 1000, priceSource: 'Прайс сайта' },
+      { name: 'Массаж ног', basePrice: 700, priceSource: 'Прайс сайта' },
+      { name: 'Медовый массаж тела, 60 минут', basePrice: 700, priceSource: 'Прайс сайта' },
+      { name: 'Корректирующий массаж тела, разовая процедура', basePrice: 2000, priceSource: 'Прайс сайта' },
+      { name: 'Корректирующий массаж тела, курс 10 сеансов', basePrice: 18000, priceSource: 'Прайс сайта' },
+      { name: 'Прокол ушей с серёжками студии', basePrice: 0, priceSource: 'Требует ручной настройки' },
+      { name: 'Прокол ушей с серёжками клиента', basePrice: 0, priceSource: 'Требует ручной настройки' },
+      { name: 'Перекрытие старого перманентного макияжа после консультации', basePrice: 7000, priceSource: 'Прайс сайта: минимальная цена из диапазона от 7 000 до 9 000 ₽' },
+    ];
     const DEFAULT_EMPLOYEES = [
       { name: 'Ксения', role: 'master' },
       { name: 'Татьяна', role: 'master' },
@@ -3223,6 +3405,7 @@
       renderBreakdown();
       renderAnalytics();
       renderPayroll();
+      renderPromoEconomics();
     }
 
     // ─── Аналитика ───────────────────────────────────────────────
@@ -4351,6 +4534,473 @@
       });
     }
 
+
+    // ─── Экономика процедур для акций ───────────────────────────
+
+    const PROMO_ECONOMICS_KEY = 'salon-budget-promo-procedure-economics';
+    const INJECTION_GROUP = 'Инъекционная косметология';
+
+    let promoProcedureEconomics = [];
+    let promoPriceMap = null;
+    let editingPromoEconomicsId = null;
+    let promoEconomicsFilters = { search: '', group: '', status: 'all' };
+
+    function buildPromoPriceMap() {
+      promoPriceMap = new Map();
+      DEFAULT_PROMO_PRICES.forEach(item => {
+        promoPriceMap.set(normalizeDirectoryName(item.name), {
+          basePrice: Number(item.basePrice) || 0,
+          priceSource: item.priceSource || 'Прайс сайта'
+        });
+      });
+    }
+
+    function lookupPromoPrice(procedureName) {
+      if (!promoPriceMap) buildPromoPriceMap();
+      return promoPriceMap.get(normalizeDirectoryName(procedureName)) || {
+        basePrice: 0,
+        priceSource: 'Требует ручной настройки'
+      };
+    }
+
+    function isLaserBiorevitalization(name) {
+      const n = (name || '').toLowerCase();
+      return n.includes('лазерная биоревитализация') || n.includes('безинъекционная лазерная биоревитализация');
+    }
+
+    function isVelvetProcedure(name) {
+      const n = (name || '').toLowerCase();
+      return n.includes('вельвет') || n.includes('velvet');
+    }
+
+    function applyPromoEconomicsRules(entry) {
+      if (entry.group === INJECTION_GROUP) {
+        entry.canUseInPromos = false;
+        entry.exclusionReason = 'Инъекционная косметология не участвует в акциях';
+        entry.note = 'Исключено из акций из-за низкой чистой прибыли после себестоимости и выплаты мастеру';
+        entry.profitMode = 'percent';
+        entry.profitPercent = 40;
+        entry.fixedProfit = 0;
+        return entry;
+      }
+
+      if (isVelvetProcedure(entry.procedureName)) {
+        entry.basePrice = 2500;
+        entry.profitMode = 'fixed';
+        entry.fixedProfit = 1000;
+        entry.profitPercent = 40;
+        entry.canUseInPromos = true;
+        entry.exclusionReason = '';
+        entry.note = 'Для Вельвета чистая прибыль фиксированная: 1 000 ₽ при стоимости 2 500 ₽';
+        return entry;
+      }
+
+      if (isLaserBiorevitalization(entry.procedureName)) {
+        entry.profitMode = 'percent';
+        entry.profitPercent = 50;
+        entry.fixedProfit = 0;
+        entry.canUseInPromos = true;
+        entry.exclusionReason = '';
+        entry.note = 'Для лазерной биоревитализации чистая прибыль для акций считается как 50% от стоимости процедуры';
+        return entry;
+      }
+
+      entry.profitMode = 'percent';
+      entry.profitPercent = 40;
+      entry.fixedProfit = 0;
+      entry.canUseInPromos = true;
+      entry.exclusionReason = '';
+      if (!entry.note) entry.note = '';
+      return entry;
+    }
+
+    function normalizePromoEconomicsEntry(raw) {
+      const entry = {
+        id: raw.id || generateId(),
+        procedureName: String(raw.procedureName || '').trim(),
+        group: String(raw.group || '').trim(),
+        basePrice: Math.max(0, Number(raw.basePrice) || 0),
+        priceSource: String(raw.priceSource || ''),
+        profitMode: raw.profitMode === 'fixed' ? 'fixed' : 'percent',
+        profitPercent: Math.min(100, Math.max(0, Number(raw.profitPercent) || 0)),
+        fixedProfit: Math.max(0, Number(raw.fixedProfit) || 0),
+        canUseInPromos: raw.canUseInPromos !== false,
+        exclusionReason: String(raw.exclusionReason || ''),
+        note: String(raw.note || ''),
+        isActive: raw.isActive !== false
+      };
+      return entry;
+    }
+
+    function createPromoEconomicsEntry(procedureName, group) {
+      const price = lookupPromoPrice(procedureName);
+      const entry = normalizePromoEconomicsEntry({
+        id: generateId(),
+        procedureName,
+        group: group || '',
+        basePrice: price.basePrice,
+        priceSource: price.priceSource,
+        profitMode: 'percent',
+        profitPercent: 40,
+        fixedProfit: 0,
+        canUseInPromos: true,
+        exclusionReason: '',
+        note: '',
+        isActive: true
+      });
+      return applyPromoEconomicsRules(entry);
+    }
+
+    function savePromoEconomics() {
+      localStorage.setItem(PROMO_ECONOMICS_KEY, JSON.stringify(promoProcedureEconomics));
+    }
+
+    function seedPromoEconomicsFromProcedures() {
+      buildPromoPriceMap();
+      promoProcedureEconomics = procedures.map(p => createPromoEconomicsEntry(p.name, p.group));
+      savePromoEconomics();
+    }
+
+    function loadPromoEconomics() {
+      buildPromoPriceMap();
+      const existing = parseDirectoryJson(localStorage.getItem(PROMO_ECONOMICS_KEY));
+      if (existing.length === 0) {
+        seedPromoEconomicsFromProcedures();
+        return;
+      }
+      promoProcedureEconomics = existing.map(normalizePromoEconomicsEntry);
+    }
+
+    function calculatePromoCleanProfit(entry) {
+      if (entry.profitMode === 'fixed') return entry.fixedProfit || 0;
+      return (entry.basePrice || 0) * (entry.profitPercent || 0) / 100;
+    }
+
+    function getPromoProfitModeLabel(entry) {
+      if (entry.profitMode === 'fixed') return 'фиксированная';
+      if (entry.profitPercent === 50) return '50%';
+      if (entry.profitPercent === 40) return '40%';
+      return entry.profitPercent + '%';
+    }
+
+    function getPromoEconomicsStats() {
+      const list = promoProcedureEconomics;
+      return {
+        total: list.length,
+        inPromos: list.filter(e => e.canUseInPromos).length,
+        excluded: list.filter(e => !e.canUseInPromos).length,
+        noPrice: list.filter(e => !e.basePrice || e.basePrice <= 0).length,
+        pct40: list.filter(e => e.profitMode === 'percent' && e.profitPercent === 40).length,
+        pct50: list.filter(e => e.profitMode === 'percent' && e.profitPercent === 50).length,
+        fixed: list.filter(e => e.profitMode === 'fixed').length
+      };
+    }
+
+    function matchesPromoEconomicsFilter(entry) {
+      const f = promoEconomicsFilters;
+      if (f.search) {
+        const q = normalizeDirectoryName(f.search);
+        const inName = normalizeDirectoryName(entry.procedureName).includes(q);
+        const inGroup = normalizeDirectoryName(entry.group).includes(q);
+        if (!inName && !inGroup) return false;
+      }
+      if (f.group && entry.group !== f.group) return false;
+      switch (f.status) {
+        case 'in_promos': return !!entry.canUseInPromos;
+        case 'excluded': return !entry.canUseInPromos;
+        case 'no_price': return !entry.basePrice || entry.basePrice <= 0;
+        case 'pct40': return entry.profitMode === 'percent' && entry.profitPercent === 40;
+        case 'pct50': return entry.profitMode === 'percent' && entry.profitPercent === 50;
+        case 'fixed': return entry.profitMode === 'fixed';
+        default: return true;
+      }
+    }
+
+    function validatePromoEconomicsForm(data) {
+      const errors = [];
+      const basePrice = parseFloat(data.basePrice);
+      const profitPercent = parseFloat(data.profitPercent);
+      const fixedProfit = parseFloat(data.fixedProfit);
+      if (isNaN(basePrice) || basePrice < 0) errors.push('Стоимость не может быть отрицательной');
+      if (data.profitMode === 'percent') {
+        if (isNaN(profitPercent) || profitPercent < 0 || profitPercent > 100) {
+          errors.push('Процент должен быть от 0 до 100');
+        }
+      } else if (isNaN(fixedProfit) || fixedProfit < 0) {
+        errors.push('Фиксированная прибыль не может быть отрицательной');
+      }
+      return errors;
+    }
+
+    function savePromoEconomicsEntry(id, formData) {
+      const entry = promoProcedureEconomics.find(e => e.id === id);
+      if (!entry) return false;
+      const errors = validatePromoEconomicsForm(formData);
+      if (errors.length) {
+        showToast(errors[0]);
+        return false;
+      }
+      entry.basePrice = Math.max(0, parseFloat(formData.basePrice) || 0);
+      entry.priceSource = (formData.priceSource || '').trim();
+      entry.profitMode = formData.profitMode === 'fixed' ? 'fixed' : 'percent';
+      entry.profitPercent = Math.min(100, Math.max(0, parseFloat(formData.profitPercent) || 0));
+      entry.fixedProfit = Math.max(0, parseFloat(formData.fixedProfit) || 0);
+      entry.canUseInPromos = formData.canUseInPromos === true || formData.canUseInPromos === 'true';
+      entry.exclusionReason = (formData.exclusionReason || '').trim();
+      entry.note = (formData.note || '').trim();
+      if (entry.canUseInPromos && entry.group === INJECTION_GROUP) {
+        showToast('Инъекционная косметология по умолчанию исключена из акций');
+      }
+      savePromoEconomics();
+      editingPromoEconomicsId = null;
+      renderPromoEconomics();
+      showToast('Запись сохранена');
+      return true;
+    }
+
+    function togglePromoEconomicsInPromos(id) {
+      const entry = promoProcedureEconomics.find(e => e.id === id);
+      if (!entry) return;
+      entry.canUseInPromos = !entry.canUseInPromos;
+      if (entry.canUseInPromos) {
+        if (entry.group === INJECTION_GROUP) {
+          entry.exclusionReason = '';
+        } else {
+          entry.exclusionReason = '';
+        }
+      } else if (!entry.exclusionReason || entry.exclusionReason === '') {
+        entry.exclusionReason = entry.group === INJECTION_GROUP
+          ? 'Инъекционная косметология не участвует в акциях'
+          : 'Отключено вручную';
+      }
+      savePromoEconomics();
+      renderPromoEconomics();
+    }
+
+    function syncPromoEconomicsFromProcedures() {
+      const existingNames = new Set(promoProcedureEconomics.map(e => normalizeDirectoryName(e.procedureName)));
+      let added = 0;
+      procedures.forEach(p => {
+        const key = normalizeDirectoryName(p.name);
+        if (!existingNames.has(key)) {
+          promoProcedureEconomics.push(createPromoEconomicsEntry(p.name, p.group));
+          existingNames.add(key);
+          added++;
+        }
+      });
+      savePromoEconomics();
+      renderPromoEconomics();
+      showToast(added ? 'Добавлено новых процедур: ' + added : 'Новых процедур не найдено');
+    }
+
+    function fillPromoDefault40Percent() {
+      let changed = 0;
+      promoProcedureEconomics.forEach(entry => {
+        if (entry.group === INJECTION_GROUP) return;
+        if (isVelvetProcedure(entry.procedureName)) return;
+        if (isLaserBiorevitalization(entry.procedureName)) return;
+        if (entry.profitMode === 'percent' && entry.profitPercent !== 40) {
+          entry.profitPercent = 40;
+          changed++;
+        }
+      });
+      savePromoEconomics();
+      renderPromoEconomics();
+      showToast(changed ? 'Обновлено процедур: ' + changed : 'Изменений не потребовалось');
+    }
+
+    function resetPromoEconomics() {
+      if (!confirm('Пересоздать справочник экономики акций? Текущие настройки будут удалены.')) return;
+      localStorage.removeItem(PROMO_ECONOMICS_KEY);
+      promoProcedureEconomics = [];
+      editingPromoEconomicsId = null;
+      seedPromoEconomicsFromProcedures();
+      renderPromoEconomics();
+      renderAll();
+      showToast('Справочник экономики акций пересоздан');
+    }
+
+    function renderPromoEconomicsEditRow(entry) {
+      return `
+        <tr class="promo-edit-row"><td colspan="8">
+          <form class="promo-edit-form" data-id="${escapeHtml(entry.id)}">
+            <div class="promo-edit-grid">
+              <div class="field">
+                <label>Стоимость процедуры, ₽</label>
+                <input type="number" name="basePrice" min="0" step="0.01" value="${entry.basePrice}">
+              </div>
+              <div class="field">
+                <label>Источник цены</label>
+                <input type="text" name="priceSource" value="${escapeHtml(entry.priceSource)}">
+              </div>
+              <div class="field">
+                <label>Режим расчёта прибыли</label>
+                <select name="profitMode" class="directory-role-select promo-profit-mode-select">
+                  <option value="percent"${entry.profitMode === 'percent' ? ' selected' : ''}>Процент от стоимости</option>
+                  <option value="fixed"${entry.profitMode === 'fixed' ? ' selected' : ''}>Фиксированная сумма</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Процент чистой прибыли</label>
+                <input type="number" name="profitPercent" min="0" max="100" step="0.01" value="${entry.profitPercent}">
+              </div>
+              <div class="field">
+                <label>Фиксированная чистая прибыль, ₽</label>
+                <input type="number" name="fixedProfit" min="0" step="0.01" value="${entry.fixedProfit}">
+              </div>
+              <div class="field">
+                <label>Участвует в акциях</label>
+                <select name="canUseInPromos" class="directory-role-select">
+                  <option value="true"${entry.canUseInPromos ? ' selected' : ''}>Да</option>
+                  <option value="false"${!entry.canUseInPromos ? ' selected' : ''}>Нет</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Причина исключения</label>
+                <input type="text" name="exclusionReason" value="${escapeHtml(entry.exclusionReason)}">
+              </div>
+              <div class="field promo-edit-note">
+                <label>Примечание</label>
+                <input type="text" name="note" value="${escapeHtml(entry.note)}">
+              </div>
+            </div>
+            <div class="promo-edit-actions">
+              <button type="submit" class="btn btn-primary btn-sm">Сохранить</button>
+              <button type="button" class="btn btn-secondary btn-sm promo-edit-cancel">Отмена</button>
+            </div>
+          </form>
+        </td></tr>
+      `;
+    }
+
+    function renderPromoEconomics() {
+      const summaryEl = document.getElementById('promo-economics-summary');
+      const listEl = document.getElementById('promo-economics-list');
+      const groupFilter = document.getElementById('promo-economics-group-filter');
+      if (!summaryEl || !listEl) return;
+
+      const stats = getPromoEconomicsStats();
+      summaryEl.innerHTML = `
+        <div class="promo-stats-grid">
+          <div class="csv-preview-stat"><span class="label">Всего процедур</span><span class="value">${stats.total}</span></div>
+          <div class="csv-preview-stat"><span class="label">Участвуют в акциях</span><span class="value">${stats.inPromos}</span></div>
+          <div class="csv-preview-stat"><span class="label">Исключены из акций</span><span class="value">${stats.excluded}</span></div>
+          <div class="csv-preview-stat"><span class="label">Без стоимости</span><span class="value">${stats.noPrice}</span></div>
+          <div class="csv-preview-stat"><span class="label">Прибыль 40%</span><span class="value">${stats.pct40}</span></div>
+          <div class="csv-preview-stat"><span class="label">Прибыль 50%</span><span class="value">${stats.pct50}</span></div>
+          <div class="csv-preview-stat"><span class="label">Фиксированная прибыль</span><span class="value">${stats.fixed}</span></div>
+        </div>
+      `;
+
+      if (groupFilter) {
+        const groups = [...new Set(promoProcedureEconomics.map(e => e.group).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+        groupFilter.innerHTML = '<option value="">Все группы</option>' +
+          groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+        groupFilter.value = promoEconomicsFilters.group || '';
+      }
+
+      const filtered = promoProcedureEconomics
+        .filter(matchesPromoEconomicsFilter)
+        .sort((a, b) => a.group.localeCompare(b.group, 'ru') || a.procedureName.localeCompare(b.procedureName, 'ru'));
+
+      if (!filtered.length) {
+        listEl.innerHTML = '<div class="payroll-empty">Процедуры не найдены</div>';
+        return;
+      }
+
+      const rows = filtered.flatMap(entry => {
+        const profit = calculatePromoCleanProfit(entry);
+        const toggleLabel = entry.canUseInPromos ? 'Отключить из акций' : 'Включить в акции';
+        const mainRow = `
+          <tr data-id="${escapeHtml(entry.id)}">
+            <td>${escapeHtml(entry.procedureName)}</td>
+            <td>${escapeHtml(entry.group)}</td>
+            <td class="num">${formatMoney(entry.basePrice)}</td>
+            <td class="num">${formatMoney(profit)}</td>
+            <td>${escapeHtml(getPromoProfitModeLabel(entry))}</td>
+            <td>${entry.canUseInPromos ? 'да' : 'нет'}</td>
+            <td><span class="promo-meta">${escapeHtml(entry.priceSource)}</span>${entry.exclusionReason ? '<br><span class="promo-meta-muted">' + escapeHtml(entry.exclusionReason) + '</span>' : ''}${entry.note ? '<br><span class="promo-meta-muted">' + escapeHtml(entry.note) + '</span>' : ''}</td>
+            <td class="directory-actions">
+              <button type="button" class="btn-link promo-edit-btn" data-id="${escapeHtml(entry.id)}">Изменить</button>
+              <button type="button" class="btn-link promo-toggle-btn" data-id="${escapeHtml(entry.id)}">${toggleLabel}</button>
+            </td>
+          </tr>
+        `;
+        if (editingPromoEconomicsId === entry.id) {
+          return [mainRow, renderPromoEconomicsEditRow(entry)];
+        }
+        return [mainRow];
+      }).join('');
+
+      listEl.innerHTML = `
+        <div class="promo-economics-table-wrap">
+          <table class="directory-table promo-economics-table">
+            <thead><tr>
+              <th>Процедура</th><th>Группа</th><th class="num">Стоимость</th><th class="num">Чистая прибыль</th>
+              <th>Режим</th><th>В акциях</th><th>Источник / примечания</th><th></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+
+      listEl.querySelectorAll('.promo-edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          editingPromoEconomicsId = btn.dataset.id;
+          renderPromoEconomics();
+        });
+      });
+
+      listEl.querySelectorAll('.promo-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => togglePromoEconomicsInPromos(btn.dataset.id));
+      });
+
+      listEl.querySelectorAll('.promo-edit-form').forEach(form => {
+        form.addEventListener('submit', e => {
+          e.preventDefault();
+          const fd = new FormData(form);
+          savePromoEconomicsEntry(form.dataset.id, {
+            basePrice: fd.get('basePrice'),
+            priceSource: fd.get('priceSource'),
+            profitMode: fd.get('profitMode'),
+            profitPercent: fd.get('profitPercent'),
+            fixedProfit: fd.get('fixedProfit'),
+            canUseInPromos: fd.get('canUseInPromos'),
+            exclusionReason: fd.get('exclusionReason'),
+            note: fd.get('note')
+          });
+        });
+        form.querySelector('.promo-edit-cancel')?.addEventListener('click', () => {
+          editingPromoEconomicsId = null;
+          renderPromoEconomics();
+        });
+      });
+    }
+
+    function initPromoEconomics() {
+      loadPromoEconomics();
+      renderPromoEconomics();
+
+      document.getElementById('promo-economics-search')?.addEventListener('input', e => {
+        promoEconomicsFilters.search = e.target.value.trim();
+        renderPromoEconomics();
+      });
+
+      document.getElementById('promo-economics-group-filter')?.addEventListener('change', e => {
+        promoEconomicsFilters.group = e.target.value;
+        renderPromoEconomics();
+      });
+
+      document.getElementById('promo-economics-status-filter')?.addEventListener('change', e => {
+        promoEconomicsFilters.status = e.target.value;
+        renderPromoEconomics();
+      });
+
+      document.getElementById('promo-economics-sync-btn')?.addEventListener('click', syncPromoEconomicsFromProcedures);
+      document.getElementById('promo-economics-fill40-btn')?.addEventListener('click', fillPromoDefault40Percent);
+      document.getElementById('promo-economics-reset-btn')?.addEventListener('click', resetPromoEconomics);
+    }
+
     function initPayroll() {
       document.getElementById('payroll-service-form').addEventListener('submit', e => {
         e.preventDefault();
@@ -4852,6 +5502,7 @@
       initCsvImport();
       initDirectories();
       initPayrollAutocompletes();
+      initPromoEconomics();
 
       renderAll();
     }
