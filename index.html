@@ -1494,7 +1494,7 @@
             <div class="field" id="ps-revenue-field">
               <label for="ps-revenue">Выручка по услуге, ₽</label>
               <input type="number" id="ps-revenue" min="0.01" step="0.01" placeholder="0">
-              <div class="hint">Сумма, которую клиент оплатил за процедуру. Косметику сюда не включаем</div>
+              <div class="hint">Сумма, которую клиент оплатил за процедуру. Автоматически попадёт в доход «Услуги» в бюджете</div>
               <div class="field-error" id="ps-revenue-error"></div>
             </div>
             <div class="field" id="ps-payout-field">
@@ -2796,6 +2796,66 @@
       showToast('ФОТ зафиксирован в расходах');
     }
 
+    function syncProcedureLinkedIncome(entry) {
+      const category = 'Услуги';
+
+      if (entry.serviceRevenue <= 0) {
+        if (entry.linkedIncomeOperationId) {
+          operations = operations.filter(o => o.id !== entry.linkedIncomeOperationId);
+          delete entry.linkedIncomeOperationId;
+          saveOperations();
+        }
+        return entry;
+      }
+
+      if (entry.linkedIncomeOperationId) {
+        const idx = operations.findIndex(o => o.id === entry.linkedIncomeOperationId);
+        if (idx !== -1) {
+          operations[idx] = {
+            ...operations[idx],
+            type: 'income',
+            date: entry.date,
+            category,
+            amount: entry.serviceRevenue
+          };
+          saveOperations();
+          return entry;
+        }
+      }
+
+      const op = {
+        id: generateId(),
+        type: 'income',
+        date: entry.date,
+        category,
+        amount: entry.serviceRevenue
+      };
+      operations.push(op);
+      entry.linkedIncomeOperationId = op.id;
+      saveOperations();
+      return entry;
+    }
+
+    function unlinkProcedureIncome(incomeId) {
+      let changed = false;
+      payrollServiceEntries.forEach(entry => {
+        if (entry.linkedIncomeOperationId === incomeId) {
+          delete entry.linkedIncomeOperationId;
+          changed = true;
+        }
+      });
+      if (changed) savePayrollServiceEntries();
+    }
+
+    function removeLinkedIncomesForMonthProcedures(monthKey) {
+      payrollServiceEntries
+        .filter(e => getMonthKey(e.date) === monthKey && e.linkedIncomeOperationId)
+        .forEach(e => {
+          operations = operations.filter(o => o.id !== e.linkedIncomeOperationId);
+        });
+      saveOperations();
+    }
+
     function initPayroll() {
       document.getElementById('payroll-service-form').addEventListener('submit', e => {
         e.preventDefault();
@@ -2821,12 +2881,16 @@
         if (editingServiceId) {
           const idx = payrollServiceEntries.findIndex(x => x.id === editingServiceId);
           if (idx !== -1) {
-            payrollServiceEntries[idx] = { ...payrollServiceEntries[idx], ...payload };
+            const entry = { ...payrollServiceEntries[idx], ...payload };
+            syncProcedureLinkedIncome(entry);
+            payrollServiceEntries[idx] = entry;
           }
           cancelEditServiceForm();
           showToast('Процедура обновлена');
         } else {
-          payrollServiceEntries.push({ id: generateId(), ...payload });
+          const entry = { id: generateId(), ...payload };
+          syncProcedureLinkedIncome(entry);
+          payrollServiceEntries.push(entry);
           document.getElementById('ps-procedure').value = '';
           document.getElementById('ps-master').value = '';
           document.getElementById('ps-revenue').value = '';
@@ -2834,7 +2898,8 @@
           showToast('Процедура добавлена');
         }
         savePayrollServiceEntries();
-        renderPayroll();
+        budgetMonthInput.value = getMonthKey(date);
+        renderAll();
       });
 
       document.getElementById('payroll-cosmetics-form').addEventListener('submit', e => {
@@ -2944,6 +3009,7 @@
     function deleteOperation(id) {
       if (!confirm('Удалить эту операцию?')) return;
       if (editingOperationId === id) cancelEditOperation();
+      unlinkProcedureIncome(id);
       operations = operations.filter(op => op.id !== id);
       saveOperations();
       renderAll();
@@ -2993,6 +3059,7 @@
     }
 
     function clearPayrollDataForMonth(monthKey, removePostedFotOp) {
+      removeLinkedIncomesForMonthProcedures(monthKey);
       payrollServiceEntries = payrollServiceEntries.filter(e => getMonthKey(e.date) !== monthKey);
       payrollCosmeticsEntries = payrollCosmeticsEntries.filter(e => getMonthKey(e.date) !== monthKey);
       delete payrollManager[monthKey];
@@ -3032,6 +3099,12 @@
       if (!confirm('Удалить все доходы и расходы выбранного месяца? Это действие нельзя отменить.')) return;
       if (editingOperationId) cancelEditOperation();
       operations = operations.filter(op => getMonthKey(op.date) !== monthKey);
+      payrollServiceEntries.forEach(entry => {
+        if (getMonthKey(entry.date) === monthKey && entry.linkedIncomeOperationId) {
+          delete entry.linkedIncomeOperationId;
+        }
+      });
+      savePayrollServiceEntries();
       saveOperations();
       renderAll();
       showToast('Операции месяца удалены');
