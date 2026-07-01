@@ -589,6 +589,115 @@
     }
 
     .cleanup-actions .btn { font-size: 0.82rem; }
+    /* Справочники и автодополнение */
+    .directory-add-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+      align-items: flex-end;
+    }
+
+    .directory-add-form .field { flex: 1; min-width: 140px; margin: 0; }
+
+    .directory-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    .directory-table th,
+    .directory-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .directory-table th {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .directory-table tr:last-child td { border-bottom: none; }
+
+    .directory-actions { white-space: nowrap; }
+
+    .directory-name-input,
+    .directory-group-input {
+      width: 100%;
+      min-width: 0;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.88rem;
+    }
+
+    .directory-role-select {
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.88rem;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .status-badge.active { background: var(--income-bg); color: var(--income); }
+    .status-badge.inactive { background: var(--bg); color: var(--text-muted); }
+
+    .autocomplete-wrap { position: relative; }
+
+    .autocomplete-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 30;
+      max-height: 220px;
+      overflow-y: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow);
+      margin-top: 4px;
+    }
+
+    .autocomplete-item {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      border: none;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.88rem;
+      color: var(--text);
+    }
+
+    .autocomplete-item:hover,
+    .autocomplete-item.is-active { background: var(--bg); }
+
+    .autocomplete-meta {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
 
     /* История (accordion) */
     .history-accordion {
@@ -1483,12 +1592,18 @@
             </div>
             <div class="field" id="ps-procedure-field">
               <label for="ps-procedure">Процедура</label>
-              <input type="text" id="ps-procedure" placeholder="Например, окрашивание">
+              <div class="autocomplete-wrap">
+                <input type="text" id="ps-procedure" placeholder="Начните вводить название" autocomplete="off">
+                <div class="autocomplete-list" id="ps-procedure-list" hidden></div>
+              </div>
               <div class="field-error" id="ps-procedure-error"></div>
             </div>
             <div class="field" id="ps-master-field">
               <label for="ps-master">Мастер</label>
-              <input type="text" id="ps-master" placeholder="Имя мастера">
+              <div class="autocomplete-wrap">
+                <input type="text" id="ps-master" placeholder="Имя мастера" autocomplete="off">
+                <div class="autocomplete-list" id="ps-master-list" hidden></div>
+              </div>
               <div class="field-error" id="ps-master-error"></div>
             </div>
             <div class="field" id="ps-revenue-field">
@@ -1524,7 +1639,10 @@
             </div>
             <div class="field" id="pc-seller-field">
               <label for="pc-seller">Продавец</label>
-              <input type="text" id="pc-seller" placeholder="Имя продавца">
+              <div class="autocomplete-wrap">
+                <input type="text" id="pc-seller" placeholder="Имя продавца" autocomplete="off">
+                <div class="autocomplete-list" id="pc-seller-list" hidden></div>
+              </div>
               <div class="field-error" id="pc-seller-error"></div>
             </div>
             <div class="field" id="pc-amount-field">
@@ -1550,8 +1668,11 @@
         <p class="section-hint">Проценты считаются только от выручки по услугам, без косметики.</p>
         <div class="manager-grid">
           <div class="field">
-            <label for="pm-name">Имя менеджера</label>
-            <input type="text" id="pm-name" placeholder="Имя">
+            <label for="pm-name">Менеджер</label>
+            <div class="autocomplete-wrap">
+              <input type="text" id="pm-name" placeholder="Имя менеджера" autocomplete="off">
+              <div class="autocomplete-list" id="pm-name-list" hidden></div>
+            </div>
           </div>
           <div class="field">
             <label for="pm-shifts">Количество смен за месяц</label>
@@ -1635,6 +1756,58 @@
           </div>
         </div>
       </div>
+
+      <div class="card history-accordion" id="employees-directory-accordion">
+        <button type="button" class="history-toggle" id="employees-directory-toggle" aria-expanded="false">
+          <span class="history-toggle-left">
+            <span class="history-toggle-title">Справочник сотрудников</span>
+            <span class="history-count" id="employees-directory-count"></span>
+          </span>
+          <span class="history-chevron" aria-hidden="true">▼</span>
+        </button>
+        <div class="history-panel">
+          <div class="history-panel-inner">
+            <form class="directory-add-form" id="employee-add-form">
+              <div class="field">
+                <label for="new-employee-name">Имя</label>
+                <input type="text" id="new-employee-name" placeholder="Новый сотрудник">
+              </div>
+              <div class="field">
+                <label for="new-employee-role">Роль</label>
+                <select id="new-employee-role" class="directory-role-select"></select>
+              </div>
+              <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+            <div id="employees-directory-list"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card history-accordion" id="procedures-directory-accordion">
+        <button type="button" class="history-toggle" id="procedures-directory-toggle" aria-expanded="false">
+          <span class="history-toggle-left">
+            <span class="history-toggle-title">Справочник процедур</span>
+            <span class="history-count" id="procedures-directory-count"></span>
+          </span>
+          <span class="history-chevron" aria-hidden="true">▼</span>
+        </button>
+        <div class="history-panel">
+          <div class="history-panel-inner">
+            <form class="directory-add-form" id="procedure-add-form">
+              <div class="field">
+                <label for="new-procedure-name">Название</label>
+                <input type="text" id="new-procedure-name" placeholder="Название процедуры">
+              </div>
+              <div class="field">
+                <label for="new-procedure-group">Группа</label>
+                <input type="text" id="new-procedure-group" placeholder="Группа">
+              </div>
+              <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+            <div id="procedures-directory-list"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">Очистка данных месяца</div>
         <p class="section-hint">Действия относятся к месяцу, выбранному в шапке. Восстановить данные будет нельзя.</p>
@@ -1663,6 +1836,124 @@
     const PAYROLL_FIXED_KEY = 'salon-budget-payroll-fixed';
     const PAYROLL_SETTINGS_KEY = 'salon-budget-payroll-settings';
     const PAYROLL_POSTED_KEY = 'salon-budget-payroll-posted';
+    const EMPLOYEES_KEY = 'salon-budget-employees';
+    const PROCEDURES_KEY = 'salon-budget-procedures';
+    const EMPLOYEE_ROLES = ['master', 'manager', 'seller', 'cleaner', 'other'];
+    const EMPLOYEE_ROLE_LABELS = {
+      master: 'Мастер',
+      manager: 'Менеджер',
+      seller: 'Продавец',
+      cleaner: 'Уборка',
+      other: 'Другое'
+    };
+    const DEFAULT_EMPLOYEES = [
+      { name: 'Ксения', role: 'master' },
+      { name: 'Татьяна', role: 'master' },
+      { name: 'Ирина Б', role: 'master' },
+      { name: 'Ирина К', role: 'master' },
+      { name: 'Елена', role: 'master' },
+      { name: 'Юлия', role: 'master' },
+      { name: 'Лариса', role: 'manager' }
+    ];
+    const DEFAULT_PROCEDURES = [
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'PRE-SistemPro / Ренювер PreSistemPro' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Безинъекционный ботокс' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Безинъекционный лифтинг' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Пептидное армирование лица' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Антивозрастной уход за шеей и декольте' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Комплекс «Формула сияния»' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Безинъекционная лазерная биоревитализация лица' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Холодная плазма' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Ультразвуковая чистка лица / УЗ-чистка лица' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Альгинатная маска' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Жёлтый пилинг с ретинолом' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Пилинг Revital от Skin Synergy' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Массаж лица по Жаке' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Косметический массаж лица' },
+      { group: 'Аппаратная и эстетическая безинъекционная косметология', name: 'Буккальный массаж лица' },
+      { group: 'Холодная плазма', name: 'Холодная плазма лица' },
+      { group: 'Холодная плазма', name: 'Холодная плазма лба' },
+      { group: 'Холодная плазма', name: 'Холодная плазма межбровного пространства' },
+      { group: 'Холодная плазма', name: 'Холодная плазма верхних век' },
+      { group: 'Холодная плазма', name: 'Холодная плазма нижних век' },
+      { group: 'Холодная плазма', name: 'Холодная плазма нижней трети лица' },
+      { group: 'Холодная плазма', name: 'Холодная плазма носогубных складок' },
+      { group: 'Холодная плазма', name: 'Холодная плазма скул / щёк' },
+      { group: 'Холодная плазма', name: 'Холодная плазма шеи' },
+      { group: 'Холодная плазма', name: 'Холодная плазма декольте' },
+      { group: 'Холодная плазма', name: 'Холодная плазма кистей рук' },
+      { group: 'Холодная плазма', name: 'Холодная плазма губ' },
+      { group: 'Холодная плазма', name: 'Холодная плазма губ: кисетные морщины' },
+      { group: 'Уход за кожей рук', name: 'Безинъекционная лазерная биоревитализация для рук' },
+      { group: 'Уход за кожей рук', name: 'Уходовая неаппаратная процедура для гладкости и бархатистости кожи рук' },
+      { group: 'Уход за кожей рук', name: 'Комплекс омоложения кожи рук' },
+      { group: 'Ресницы', name: 'Реконструкция ресниц Velvet / Вельвет ресниц' },
+      { group: 'Брови', name: 'Оформление бровей воском' },
+      { group: 'Брови', name: 'Оформление бровей пинцетом' },
+      { group: 'Брови', name: 'Окрашивание бровей' },
+      { group: 'Брови', name: 'Окрашивание бровей хной / краской с коррекцией пинцетом или воском' },
+      { group: 'Брови', name: 'Долговременная укладка бровей с окрашиванием хной' },
+      { group: 'Перманентный макияж', name: 'Перманентный макияж бровей в волосковой технике' },
+      { group: 'Перманентный макияж', name: 'Перманентный макияж бровей в технике растушёвки' },
+      { group: 'Перманентный макияж', name: 'Перманентный макияж бровей в комбинированной технике' },
+      { group: 'Перманентный макияж', name: 'Перманентный макияж губ' },
+      { group: 'Перманентный макияж', name: 'Перманентный макияж губ с биоревитализирующим компонентом' },
+      { group: 'Перманентный макияж', name: 'Перманентный макияж межресничного пространства' },
+      { group: 'Перманентный макияж', name: 'Перманентный макияж век: теневой эффект / стрелка' },
+      { group: 'Перманентный макияж', name: 'Коррекция перманентного макияжа бровей' },
+      { group: 'Перманентный макияж', name: 'Коррекция перманентного макияжа губ' },
+      { group: 'Перманентный макияж', name: 'Коррекция межресничного пространства' },
+      { group: 'Перманентный макияж', name: 'Коррекция перманентного макияжа век: теневой эффект / стрелка' },
+      { group: 'Перманентный макияж', name: 'Рефреш перманентного макияжа бровей' },
+      { group: 'Перманентный макияж', name: 'Рефреш перманентного макияжа губ' },
+      { group: 'Перманентный макияж', name: 'Рефреш межресничного пространства' },
+      { group: 'Перманентный макияж', name: 'Рефреш перманентного макияжа век: стрелочка с растушёвкой' },
+      { group: 'Перманентный макияж', name: 'Перекрытие старого перманентного макияжа после консультации' },
+      { group: 'Удаление старого татуажа и тату', name: 'Удаление старого татуажа лазером' },
+      { group: 'Удаление старого татуажа и тату', name: 'Удаление тату лазером' },
+      { group: 'Удаление старого татуажа и тату', name: 'Удаление старого татуажа кислотным ремувером' },
+      { group: 'Удаление старого татуажа и тату', name: 'Осветление пигмента перед перекрытием или обновлением перманента' },
+      { group: 'Массаж лица', name: 'Массаж лица по Жаке' },
+      { group: 'Массаж лица', name: 'Косметический массаж лица' },
+      { group: 'Массаж лица', name: 'Буккальный массаж лица' },
+      { group: 'Массаж тела', name: 'Ручной массаж, 30 минут' },
+      { group: 'Массаж тела', name: 'Ручной массаж, 60 минут' },
+      { group: 'Массаж тела', name: 'Ручной массаж, 80 минут' },
+      { group: 'Массаж тела', name: 'Ручной массаж, 80 минут при оплате курса' },
+      { group: 'Массаж тела', name: 'Ручной массаж, курс 10 сеансов по 60 минут' },
+      { group: 'Массаж тела', name: 'Ручной массаж, курс 10 сеансов по 80 минут' },
+      { group: 'Массаж тела', name: 'Ручной классический массаж всего тела, 40 минут' },
+      { group: 'Массаж тела', name: 'Ручной классический массаж всего тела, 60 минут' },
+      { group: 'Массаж тела', name: 'Ручной массаж всего тела, курс 10 сеансов по 40 минут' },
+      { group: 'Массаж тела', name: 'Ручной массаж всего тела, курс 10 сеансов по 60 минут' },
+      { group: 'Массаж тела', name: 'Массаж ШВЗ / ручной массаж шейно-воротниковой зоны' },
+      { group: 'Массаж тела', name: 'Массаж ног' },
+      { group: 'Массаж тела', name: 'Медовый массаж тела' },
+      { group: 'Массаж тела', name: 'Корректирующий массаж тела' },
+      { group: 'Массаж тела', name: 'Корректирующий массаж тела, курс 10 сеансов' },
+      { group: 'Инъекционная косметология', name: 'Ботулинотерапия препаратом Релатокс' },
+      { group: 'Инъекционная косметология', name: 'Целосом / Celosome' },
+      { group: 'Инъекционная косметология', name: 'Точка голода' },
+      { group: 'Инъекционная косметология', name: 'Инъекционная биоревитализация лица: Kiara, Novacutan' },
+      { group: 'Инъекционная косметология', name: 'Биоревитализация губ инъекционная' },
+      { group: 'Инъекционная косметология', name: 'Липолитики по лицу' },
+      { group: 'Инъекционная косметология', name: 'Липолитики по телу' },
+      { group: 'Инъекционная косметология', name: 'Липолитики прямого действия' },
+      { group: 'Инъекционная косметология', name: 'Липолитики непрямого действия' },
+      { group: 'Инъекционная косметология', name: 'Коллаген, орбитальная зона' },
+      { group: 'Инъекционная косметология', name: 'Мезонити' },
+      { group: 'Инъекционная косметология', name: 'Полимолочная кислота' },
+      { group: 'Инъекционная косметология', name: 'Full Face' },
+      { group: 'Инъекционная косметология', name: 'Коктейль Монако' },
+      { group: 'Инъекционная косметология', name: 'Филлеры' },
+      { group: 'Инъекционная косметология', name: 'Контурная пластика губ' },
+      { group: 'Инъекционная косметология', name: 'Коррекция носогубных складок' },
+      { group: 'Инъекционная косметология', name: 'Восполнение объёма' },
+      { group: 'Инъекционная косметология', name: 'Коррекция отдельных зон лица' },
+      { group: 'Дополнительные смежные процедуры', name: 'Прокол ушей с серёжками студии' },
+      { group: 'Дополнительные смежные процедуры', name: 'Прокол ушей с серёжками клиента' },
+    ];
+
     const DEFAULT_PAYROLL_SETTINGS = {
       cosmeticsPercent: 10,
       managerShiftRateDefault: 1200,
@@ -1684,6 +1975,9 @@
     let editingOperationType = null;
     let editingServiceId = null;
     let editingCosmeticsId = null;
+    let employees = [];
+    let procedures = [];
+
 
     // ─── DOM-элементы ────────────────────────────────────────────
     const budgetMonthInput = document.getElementById('budget-month');
@@ -1898,6 +2192,497 @@
     function generateId() {
       return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     }
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function normalizeDirectoryName(str) {
+      return (str || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    }
+
+    function parseDirectoryJson(raw) {
+      if (!raw) return [];
+      try {
+        const data = JSON.parse(raw);
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function loadEmployees() {
+      const existing = parseDirectoryJson(localStorage.getItem(EMPLOYEES_KEY));
+      if (existing.length === 0) {
+        employees = DEFAULT_EMPLOYEES.map(item => ({
+          id: generateId(),
+          name: item.name,
+          role: item.role,
+          isActive: true
+        }));
+        saveEmployees();
+        return;
+      }
+      employees = existing.map(item => ({
+        id: item.id || generateId(),
+        name: String(item.name || '').trim(),
+        role: EMPLOYEE_ROLES.includes(item.role) ? item.role : 'other',
+        isActive: item.isActive !== false
+      }));
+    }
+
+    function saveEmployees() {
+      localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees));
+    }
+
+    function loadProcedures() {
+      const existing = parseDirectoryJson(localStorage.getItem(PROCEDURES_KEY));
+      if (existing.length === 0) {
+        procedures = DEFAULT_PROCEDURES.map(item => ({
+          id: generateId(),
+          name: item.name,
+          group: item.group,
+          isActive: true
+        }));
+        saveProcedures();
+        return;
+      }
+      procedures = existing.map(item => ({
+        id: item.id || generateId(),
+        name: String(item.name || '').trim(),
+        group: String(item.group || '').trim(),
+        isActive: item.isActive !== false
+      }));
+    }
+
+    function saveProcedures() {
+      localStorage.setItem(PROCEDURES_KEY, JSON.stringify(procedures));
+    }
+
+    function findEmployeeByName(name) {
+      const key = normalizeDirectoryName(name);
+      if (!key) return null;
+      return employees.find(e => normalizeDirectoryName(e.name) === key) || null;
+    }
+
+    function findProcedureByName(name) {
+      const key = normalizeDirectoryName(name);
+      if (!key) return null;
+      return procedures.find(p => normalizeDirectoryName(p.name) === key) || null;
+    }
+
+    function getActiveEmployeesByRoles(roles) {
+      return employees.filter(e => e.isActive && roles.includes(e.role));
+    }
+
+    function employeeMatchesQuery(name, query) {
+      const q = normalizeDirectoryName(query);
+      if (!q) return true;
+      return normalizeDirectoryName(name).includes(q);
+    }
+
+    function procedureMatchesQuery(name, query) {
+      const q = normalizeDirectoryName(query);
+      if (!q) return true;
+      const normalized = normalizeDirectoryName(name);
+      if (normalized.includes(q)) return true;
+      return normalized.split(/[\s\/\-,:«»()]+/).filter(Boolean).some(word => word.includes(q));
+    }
+
+    function addEmployee(name, role) {
+      const trimmed = name.trim();
+      if (!trimmed) return null;
+      if (findEmployeeByName(trimmed)) return null;
+      const employee = {
+        id: generateId(),
+        name: trimmed,
+        role: EMPLOYEE_ROLES.includes(role) ? role : 'master',
+        isActive: true
+      };
+      employees.push(employee);
+      saveEmployees();
+      renderEmployeesDirectory();
+      refreshPayrollAutocompletes();
+      return employee;
+    }
+
+    function updateEmployee(id, patch) {
+      const employee = employees.find(e => e.id === id);
+      if (!employee) return false;
+      if (patch.name !== undefined) {
+        const trimmed = patch.name.trim();
+        if (!trimmed) return false;
+        const duplicate = employees.find(e => e.id !== id && normalizeDirectoryName(e.name) === normalizeDirectoryName(trimmed));
+        if (duplicate) return false;
+        employee.name = trimmed;
+      }
+      if (patch.role !== undefined && EMPLOYEE_ROLES.includes(patch.role)) {
+        employee.role = patch.role;
+      }
+      if (patch.isActive !== undefined) {
+        employee.isActive = !!patch.isActive;
+      }
+      saveEmployees();
+      renderEmployeesDirectory();
+      refreshPayrollAutocompletes();
+      return true;
+    }
+
+    function addProcedure(name, group) {
+      const trimmed = name.trim();
+      if (!trimmed) return null;
+      if (findProcedureByName(trimmed)) return null;
+      const procedure = {
+        id: generateId(),
+        name: trimmed,
+        group: (group || '').trim(),
+        isActive: true
+      };
+      procedures.push(procedure);
+      saveProcedures();
+      renderProceduresDirectory();
+      refreshPayrollAutocompletes();
+      return procedure;
+    }
+
+    function updateProcedure(id, patch) {
+      const procedure = procedures.find(p => p.id === id);
+      if (!procedure) return false;
+      if (patch.name !== undefined) {
+        const trimmed = patch.name.trim();
+        if (!trimmed) return false;
+        const duplicate = procedures.find(p => p.id !== id && normalizeDirectoryName(p.name) === normalizeDirectoryName(trimmed));
+        if (duplicate) return false;
+        procedure.name = trimmed;
+      }
+      if (patch.group !== undefined) {
+        procedure.group = patch.group.trim();
+      }
+      if (patch.isActive !== undefined) {
+        procedure.isActive = !!patch.isActive;
+      }
+      saveProcedures();
+      renderProceduresDirectory();
+      refreshPayrollAutocompletes();
+      return true;
+    }
+
+    function renderEmployeeRoleOptions(selectedRole) {
+      return EMPLOYEE_ROLES.map(role =>
+        `<option value="${role}"${role === selectedRole ? ' selected' : ''}>${EMPLOYEE_ROLE_LABELS[role]}</option>`
+      ).join('');
+    }
+
+    function renderEmployeesDirectory() {
+      const listEl = document.getElementById('employees-directory-list');
+      const countEl = document.getElementById('employees-directory-count');
+      if (!listEl) return;
+
+      const activeCount = employees.filter(e => e.isActive).length;
+      if (countEl) {
+        countEl.textContent = `${employees.length} · активных ${activeCount}`;
+      }
+
+      const roleSelect = document.getElementById('new-employee-role');
+      if (roleSelect && !roleSelect.dataset.ready) {
+        roleSelect.innerHTML = renderEmployeeRoleOptions('master');
+        roleSelect.dataset.ready = '1';
+      }
+
+      if (employees.length === 0) {
+        listEl.innerHTML = '<div class="payroll-empty">Сотрудников пока нет</div>';
+        return;
+      }
+
+      const rows = employees.map(employee => `
+        <tr data-id="${escapeHtml(employee.id)}">
+          <td><input type="text" class="directory-name-input employee-name-input" value="${escapeHtml(employee.name)}" data-id="${escapeHtml(employee.id)}"></td>
+          <td><select class="directory-role-select employee-role-select" data-id="${escapeHtml(employee.id)}">${renderEmployeeRoleOptions(employee.role)}</select></td>
+          <td><span class="status-badge ${employee.isActive ? 'active' : 'inactive'}">${employee.isActive ? 'активен' : 'отключён'}</span></td>
+          <td class="directory-actions">
+            <button type="button" class="btn-link employee-toggle-btn" data-id="${escapeHtml(employee.id)}">${employee.isActive ? 'Отключить' : 'Включить'}</button>
+          </td>
+        </tr>
+      `).join('');
+
+      listEl.innerHTML = `
+        <table class="directory-table">
+          <thead><tr><th>Имя</th><th>Роль</th><th>Статус</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+
+      listEl.querySelectorAll('.employee-name-input').forEach(input => {
+        input.addEventListener('change', () => {
+          const ok = updateEmployee(input.dataset.id, { name: input.value });
+          if (!ok) {
+            const current = employees.find(e => e.id === input.dataset.id);
+            input.value = current ? current.name : input.value;
+            showToast('Не удалось сохранить имя');
+          }
+        });
+      });
+
+      listEl.querySelectorAll('.employee-role-select').forEach(select => {
+        select.addEventListener('change', () => {
+          updateEmployee(select.dataset.id, { role: select.value });
+        });
+      });
+
+      listEl.querySelectorAll('.employee-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const employee = employees.find(e => e.id === btn.dataset.id);
+          if (!employee) return;
+          updateEmployee(employee.id, { isActive: !employee.isActive });
+        });
+      });
+    }
+
+    function renderProceduresDirectory() {
+      const listEl = document.getElementById('procedures-directory-list');
+      const countEl = document.getElementById('procedures-directory-count');
+      if (!listEl) return;
+
+      const activeCount = procedures.filter(p => p.isActive).length;
+      if (countEl) {
+        countEl.textContent = `${procedures.length} · активных ${activeCount}`;
+      }
+
+      if (procedures.length === 0) {
+        listEl.innerHTML = '<div class="payroll-empty">Процедур пока нет</div>';
+        return;
+      }
+
+      const sorted = [...procedures].sort((a, b) => {
+        const groupCmp = a.group.localeCompare(b.group, 'ru');
+        return groupCmp !== 0 ? groupCmp : a.name.localeCompare(b.name, 'ru');
+      });
+
+      const rows = sorted.map(procedure => `
+        <tr data-id="${escapeHtml(procedure.id)}">
+          <td><input type="text" class="directory-name-input procedure-name-input" value="${escapeHtml(procedure.name)}" data-id="${escapeHtml(procedure.id)}"></td>
+          <td><input type="text" class="directory-group-input procedure-group-input" value="${escapeHtml(procedure.group)}" data-id="${escapeHtml(procedure.id)}"></td>
+          <td><span class="status-badge ${procedure.isActive ? 'active' : 'inactive'}">${procedure.isActive ? 'активна' : 'отключена'}</span></td>
+          <td class="directory-actions">
+            <button type="button" class="btn-link procedure-toggle-btn" data-id="${escapeHtml(procedure.id)}">${procedure.isActive ? 'Отключить' : 'Включить'}</button>
+          </td>
+        </tr>
+      `).join('');
+
+      listEl.innerHTML = `
+        <table class="directory-table">
+          <thead><tr><th>Название</th><th>Группа</th><th>Статус</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+
+      listEl.querySelectorAll('.procedure-name-input').forEach(input => {
+        input.addEventListener('change', () => {
+          const ok = updateProcedure(input.dataset.id, { name: input.value });
+          if (!ok) {
+            const current = procedures.find(p => p.id === input.dataset.id);
+            input.value = current ? current.name : input.value;
+            showToast('Не удалось сохранить название');
+          }
+        });
+      });
+
+      listEl.querySelectorAll('.procedure-group-input').forEach(input => {
+        input.addEventListener('change', () => {
+          updateProcedure(input.dataset.id, { group: input.value });
+        });
+      });
+
+      listEl.querySelectorAll('.procedure-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const procedure = procedures.find(p => p.id === btn.dataset.id);
+          if (!procedure) return;
+          updateProcedure(procedure.id, { isActive: !procedure.isActive });
+        });
+      });
+    }
+
+    function setupDirectoryAccordion(accordionId, toggleId) {
+      const accordion = document.getElementById(accordionId);
+      const toggle = document.getElementById(toggleId);
+      if (!accordion || !toggle) return;
+      toggle.addEventListener('click', () => {
+        const open = accordion.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    }
+
+    function initDirectories() {
+      loadEmployees();
+      loadProcedures();
+      renderEmployeesDirectory();
+      renderProceduresDirectory();
+      setupDirectoryAccordion('employees-directory-accordion', 'employees-directory-toggle');
+      setupDirectoryAccordion('procedures-directory-accordion', 'procedures-directory-toggle');
+
+      document.getElementById('employee-add-form')?.addEventListener('submit', e => {
+        e.preventDefault();
+        const name = document.getElementById('new-employee-name').value;
+        const role = document.getElementById('new-employee-role').value;
+        if (!name.trim()) {
+          showToast('Введите имя сотрудника');
+          return;
+        }
+        if (findEmployeeByName(name)) {
+          showToast('Такой сотрудник уже есть');
+          return;
+        }
+        addEmployee(name, role);
+        document.getElementById('new-employee-name').value = '';
+        showToast('Сотрудник добавлен');
+      });
+
+      document.getElementById('procedure-add-form')?.addEventListener('submit', e => {
+        e.preventDefault();
+        const name = document.getElementById('new-procedure-name').value;
+        const group = document.getElementById('new-procedure-group').value;
+        if (!name.trim()) {
+          showToast('Введите название процедуры');
+          return;
+        }
+        if (findProcedureByName(name)) {
+          showToast('Такая процедура уже есть');
+          return;
+        }
+        addProcedure(name, group);
+        document.getElementById('new-procedure-name').value = '';
+        document.getElementById('new-procedure-group').value = '';
+        showToast('Процедура добавлена');
+      });
+    }
+
+    const payrollAutocompletes = [];
+
+    function setupAutocomplete(inputId, listId, getItems, matchFn, limit) {
+      const input = document.getElementById(inputId);
+      const list = document.getElementById(listId);
+      if (!input || !list) return null;
+
+      let activeIndex = -1;
+
+      function hideList() {
+        list.hidden = true;
+        activeIndex = -1;
+      }
+
+      function selectValue(value) {
+        input.value = value;
+        hideList();
+      }
+
+      function renderList() {
+        const query = input.value;
+        const items = getItems().filter(item => matchFn(item, query)).slice(0, limit || 12);
+        if (!items.length) {
+          hideList();
+          return;
+        }
+        list.innerHTML = items.map((item, index) => `
+          <button type="button" class="autocomplete-item" data-index="${index}" data-value="${escapeHtml(item.value)}">
+            ${escapeHtml(item.value)}${item.meta ? `<span class="autocomplete-meta">${escapeHtml(item.meta)}</span>` : ''}
+          </button>
+        `).join('');
+        list.hidden = false;
+        activeIndex = -1;
+      }
+
+      input.addEventListener('input', renderList);
+      input.addEventListener('focus', renderList);
+      input.addEventListener('blur', () => setTimeout(hideList, 150));
+
+      list.addEventListener('mousedown', e => e.preventDefault());
+
+      list.addEventListener('click', e => {
+        const btn = e.target.closest('.autocomplete-item');
+        if (!btn) return;
+        selectValue(btn.dataset.value);
+      });
+
+      input.addEventListener('keydown', e => {
+        const options = [...list.querySelectorAll('.autocomplete-item')];
+        if (e.key === 'ArrowDown') {
+          if (list.hidden) renderList();
+          e.preventDefault();
+          activeIndex = Math.min(activeIndex + 1, options.length - 1);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          activeIndex = Math.max(activeIndex - 1, 0);
+        } else if (e.key === 'Enter' && !list.hidden && activeIndex >= 0 && options[activeIndex]) {
+          e.preventDefault();
+          selectValue(options[activeIndex].dataset.value);
+          return;
+        } else if (e.key === 'Escape') {
+          hideList();
+          return;
+        } else {
+          return;
+        }
+        options.forEach((option, index) => {
+          option.classList.toggle('is-active', index === activeIndex);
+        });
+        if (options[activeIndex]) {
+          options[activeIndex].scrollIntoView({ block: 'nearest' });
+        }
+      });
+
+      return { refresh: renderList, hide: hideList };
+    }
+
+    function initPayrollAutocompletes() {
+      payrollAutocompletes.length = 0;
+      payrollAutocompletes.push(
+        setupAutocomplete('ps-procedure', 'ps-procedure-list', () =>
+          procedures.filter(p => p.isActive).map(p => ({ value: p.name, meta: p.group })),
+          (item, query) => procedureMatchesQuery(item.value, query),
+          15
+        ),
+        setupAutocomplete('ps-master', 'ps-master-list', () =>
+          getActiveEmployeesByRoles(['master']).map(e => ({ value: e.name })),
+          (item, query) => employeeMatchesQuery(item.value, query)
+        ),
+        setupAutocomplete('pc-seller', 'pc-seller-list', () =>
+          getActiveEmployeesByRoles(['master', 'manager', 'seller']).map(e => ({ value: e.name, meta: EMPLOYEE_ROLE_LABELS[e.role] })),
+          (item, query) => employeeMatchesQuery(item.value, query)
+        ),
+        setupAutocomplete('pm-name', 'pm-name-list', () =>
+          getActiveEmployeesByRoles(['manager']).map(e => ({ value: e.name })),
+          (item, query) => employeeMatchesQuery(item.value, query)
+        )
+      );
+    }
+
+    function refreshPayrollAutocompletes() {
+      payrollAutocompletes.forEach(instance => instance?.refresh?.());
+    }
+
+    function maybeOfferAddEmployee(name, preferredRole) {
+      const trimmed = (name || '').trim();
+      if (!trimmed || findEmployeeByName(trimmed)) return;
+      const message = preferredRole === 'master'
+        ? 'Добавить этого мастера в справочник?'
+        : `Добавить «${trimmed}» в справочник сотрудников?`;
+      if (!confirm(message)) return;
+      addEmployee(trimmed, preferredRole || 'master');
+      showToast('Сотрудник добавлен в справочник');
+    }
+
+    function maybeOfferAddProcedure(name) {
+      const trimmed = (name || '').trim();
+      if (!trimmed || findProcedureByName(trimmed)) return;
+      if (!confirm('Добавить эту процедуру в справочник?')) return;
+      addProcedure(trimmed, 'Прочее');
+      showToast('Процедура добавлена в справочник');
+    }
+
 
     // ─── Тема ────────────────────────────────────────────────────
 
@@ -2519,10 +3304,15 @@
       saveJsonStorage(PAYROLL_POSTED_KEY, payrollPosted);
     }
 
+    function getDefaultManagerName() {
+      const larisa = employees.find(e => e.isActive && e.role === 'manager' && normalizeDirectoryName(e.name) === normalizeDirectoryName('Лариса'));
+      return larisa ? larisa.name : '';
+    }
+
     function getManagerData(monthKey) {
       const saved = payrollManager[monthKey];
       return {
-        name: saved?.name || '',
+        name: saved?.name || getDefaultManagerName(),
         shifts: saved?.shifts ?? 0,
         shiftRate: saved?.shiftRate ?? payrollSettings.managerShiftRateDefault ?? 1200,
         revenuePercent: saved?.revenuePercent ?? payrollSettings.managerPercentDefault ?? 10
@@ -2896,6 +3686,8 @@
           document.getElementById('ps-revenue').value = '';
           document.getElementById('ps-payout').value = '';
           showToast('Процедура добавлена');
+          maybeOfferAddProcedure(payload.procedure);
+          maybeOfferAddEmployee(payload.master, 'master');
         }
         savePayrollServiceEntries();
         budgetMonthInput.value = getMonthKey(date);
@@ -2936,6 +3728,7 @@
           document.getElementById('pc-amount').value = '';
           document.getElementById('pc-seller').value = '';
           showToast('Продажа косметики добавлена');
+          maybeOfferAddEmployee(seller.trim(), 'seller');
         }
         savePayrollCosmeticsEntries();
         renderPayroll();
@@ -3347,6 +4140,8 @@
       updateFotHint();
 
       initPayroll();
+      initDirectories();
+      initPayrollAutocompletes();
 
       renderAll();
     }
