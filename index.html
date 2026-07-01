@@ -1283,6 +1283,112 @@
       padding-bottom: 12px;
     }
 
+    .csv-import-textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      resize: vertical;
+    }
+
+    .csv-import-textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--focus-ring);
+    }
+
+    .csv-import-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .csv-import-preview {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+    }
+
+    .csv-preview-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .csv-preview-stat {
+      padding: 8px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .csv-preview-stat .label {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .csv-preview-stat .value {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .csv-preview-warning {
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      border-radius: var(--radius-sm);
+      background: var(--profit-bg);
+      border: 1px solid var(--profit-border);
+      color: var(--text);
+      font-size: 0.8rem;
+    }
+
+    .csv-preview-errors {
+      margin-top: 10px;
+    }
+
+    .csv-preview-errors-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--expense);
+      margin-bottom: 6px;
+    }
+
+    .csv-error-list {
+      max-height: 160px;
+      overflow-y: auto;
+      font-size: 0.78rem;
+    }
+
+    .csv-error-item {
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .csv-error-item:last-child { border-bottom: none; }
+
+    .csv-error-item strong { color: var(--expense); }
+
+    .csv-preview-table-wrap {
+      max-height: 180px;
+      overflow: auto;
+      margin-top: 10px;
+    }
+
+    .csv-preview-row-review td { color: var(--text-muted); font-style: italic; }
+
     .manager-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1655,6 +1761,33 @@
               </div>
             </div>
           </div>
+
+          <div class="payroll-entries history-accordion payroll-entries-accordion" id="csv-import-accordion">
+            <button type="button" class="history-toggle" id="csv-import-toggle" aria-expanded="false">
+              <span class="history-toggle-left">
+                <span class="history-toggle-title">Импорт процедур из CSV</span>
+              </span>
+              <span class="history-chevron" aria-hidden="true">▼</span>
+            </button>
+            <div class="history-panel">
+              <div class="history-panel-inner">
+                <p class="section-hint" style="margin-bottom:10px">Колонки: date, procedure, master, service_revenue, master_payout. Лишние колонки (client, phone, comment) игнорируются.</p>
+                <div class="field">
+                  <label for="csv-import-file">CSV-файл</label>
+                  <input type="file" id="csv-import-file" accept=".csv,text/csv,text/plain">
+                </div>
+                <div class="field">
+                  <label for="csv-import-text">Или вставьте CSV-текст</label>
+                  <textarea id="csv-import-text" class="csv-import-textarea" placeholder="date,procedure,master,service_revenue,master_payout&#10;2026-07-01,Буккальный массаж лица,Ксения,0,900"></textarea>
+                </div>
+                <div class="csv-import-actions">
+                  <button type="button" class="btn btn-secondary" id="csv-import-check-btn">Проверить CSV</button>
+                  <button type="button" class="btn btn-primary" id="csv-import-run-btn" disabled>Импортировать корректные строки</button>
+                </div>
+                <div id="csv-import-preview" class="csv-import-preview" hidden></div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="card payroll-card">
@@ -1991,7 +2124,7 @@
     // ─── Состояние ───────────────────────────────────────────────
     let operations = [];
     let historyExpanded = false;
-    let payrollServiceListExpanded = false;
+    let csvImportPreviewResult = null;
     let activeTab = 'dashboard';
     let payrollServiceEntries = [];
     let payrollCosmeticsEntries = [];
@@ -3704,6 +3837,358 @@
       saveOperations();
     }
 
+    // ─── Импорт процедур из CSV ───────────────────────────────────
+
+    const CSV_REQUIRED_HEADERS = ['date', 'procedure', 'master', 'service_revenue', 'master_payout'];
+
+    function normalizeCsvHeader(header) {
+      return (header || '').trim().toLowerCase().replace(/\s+/g, '_');
+    }
+
+    function detectCsvDelimiter(line) {
+      const semicolons = (line.match(/;/g) || []).length;
+      const commas = (line.match(/,/g) || []).length;
+      return semicolons > commas ? ';' : ',';
+    }
+
+    function parseCsvLine(line, delimiter) {
+      const cells = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === delimiter && !inQuotes) {
+          cells.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      cells.push(current.trim());
+      return cells;
+    }
+
+    function isValidIsoDate(str) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+      const [y, m, d] = str.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+    }
+
+    function parseNonNegativeNumber(str, fieldLabel) {
+      const trimmed = (str ?? '').trim();
+      if (trimmed === '') return { ok: false, error: fieldLabel + ' не заполнено' };
+      const num = parseFloat(trimmed.replace(',', '.'));
+      if (isNaN(num)) return { ok: false, error: fieldLabel + ' должно быть числом' };
+      if (num < 0) return { ok: false, error: fieldLabel + ' не может быть отрицательным' };
+      return { ok: true, value: num };
+    }
+
+    function rowContainsNeedReview(cells) {
+      return cells.some(cell => String(cell).includes('NEED_REVIEW'));
+    }
+
+    function getPayrollEntryFingerprint(entry) {
+      return [
+        entry.date,
+        normalizeDirectoryName(entry.procedure),
+        normalizeDirectoryName(entry.master),
+        Number(entry.serviceRevenue).toFixed(2),
+        Number(entry.masterPayout).toFixed(2)
+      ].join('|');
+    }
+
+    function findExistingPayrollDuplicate(data) {
+      const fp = getPayrollEntryFingerprint(data);
+      return payrollServiceEntries.some(e => getPayrollEntryFingerprint(e) === fp);
+    }
+
+    function buildCsvImportPreview(text) {
+      const rawLines = text.split(/\r?\n/);
+      const lines = rawLines.map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length === 0) {
+        return { parseError: 'CSV пуст или не содержит данных' };
+      }
+
+      const delimiter = detectCsvDelimiter(lines[0]);
+      const headerCells = parseCsvLine(lines[0], delimiter).map(normalizeCsvHeader);
+      const colIndex = {};
+      headerCells.forEach((name, index) => {
+        if (name) colIndex[name] = index;
+      });
+
+      const missingHeaders = CSV_REQUIRED_HEADERS.filter(h => colIndex[h] === undefined);
+      if (missingHeaders.length) {
+        return { parseError: 'Не найдены колонки: ' + missingHeaders.join(', ') };
+      }
+
+      const result = {
+        delimiter,
+        totalRows: 0,
+        validRows: [],
+        errorRows: [],
+        reviewRows: [],
+        totalRevenue: 0,
+        totalPayout: 0,
+        unknownProcedures: [],
+        unknownMasters: []
+      };
+
+      const unknownProcSet = new Set();
+      const unknownMasterSet = new Set();
+
+      for (let i = 1; i < lines.length; i++) {
+        const lineNum = i + 1;
+        const cells = parseCsvLine(lines[i], delimiter);
+        result.totalRows++;
+
+        if (rowContainsNeedReview(cells)) {
+          result.reviewRows.push({ lineNum, cells, reason: 'Строка помечена NEED_REVIEW' });
+          continue;
+        }
+
+        const getCell = key => {
+          const idx = colIndex[key];
+          return idx !== undefined && idx < cells.length ? cells[idx].trim() : '';
+        };
+
+        const errors = [];
+        const date = getCell('date');
+        const procedure = getCell('procedure');
+        const master = getCell('master');
+        const revenueRaw = getCell('service_revenue');
+        const payoutRaw = getCell('master_payout');
+
+        if (!date) errors.push('date не заполнен');
+        else if (!isValidIsoDate(date)) errors.push('date должен быть в формате YYYY-MM-DD');
+
+        if (!procedure) errors.push('procedure не заполнено');
+        if (!master) errors.push('master не заполнен');
+
+        const revParsed = parseNonNegativeNumber(revenueRaw, 'service_revenue');
+        if (!revParsed.ok) errors.push(revParsed.error);
+
+        const payParsed = parseNonNegativeNumber(payoutRaw, 'master_payout');
+        if (!payParsed.ok) errors.push(payParsed.error);
+
+        if (errors.length) {
+          result.errorRows.push({ lineNum, cells, errors });
+          continue;
+        }
+
+        const data = {
+          date,
+          procedure,
+          master,
+          serviceRevenue: revParsed.value,
+          masterPayout: payParsed.value
+        };
+
+        if (!findProcedureByName(procedure)) unknownProcSet.add(procedure);
+        if (!findEmployeeByName(master)) unknownMasterSet.add(master);
+
+        result.validRows.push({ lineNum, data });
+        result.totalRevenue += data.serviceRevenue;
+        result.totalPayout += data.masterPayout;
+      }
+
+      result.unknownProcedures = [...unknownProcSet];
+      result.unknownMasters = [...unknownMasterSet];
+      return result;
+    }
+
+    function renderCsvImportPreview(preview) {
+      const container = document.getElementById('csv-import-preview');
+      const importBtn = document.getElementById('csv-import-run-btn');
+      if (!container) return;
+
+      if (preview.parseError) {
+        container.hidden = false;
+        container.innerHTML = '<div class="csv-preview-errors-title">' + escapeHtml(preview.parseError) + '</div>';
+        if (importBtn) importBtn.disabled = true;
+        return;
+      }
+
+      const validCount = preview.validRows.length;
+      const errorCount = preview.errorRows.length + preview.reviewRows.length;
+
+      let html = `
+        <div class="csv-preview-stats">
+          <div class="csv-preview-stat"><span class="label">Всего строк</span><span class="value">${preview.totalRows}</span></div>
+          <div class="csv-preview-stat"><span class="label">Корректных</span><span class="value">${validCount}</span></div>
+          <div class="csv-preview-stat"><span class="label">С ошибками</span><span class="value">${errorCount}</span></div>
+          <div class="csv-preview-stat"><span class="label">Выручка по услугам</span><span class="value">${formatMoney(preview.totalRevenue)}</span></div>
+          <div class="csv-preview-stat"><span class="label">Выплаты мастерам</span><span class="value">${formatMoney(preview.totalPayout)}</span></div>
+        </div>
+      `;
+
+      if (preview.unknownProcedures.length) {
+        html += '<div class="csv-preview-warning">В CSV есть процедуры, которых нет в справочнике: ' +
+          escapeHtml(preview.unknownProcedures.slice(0, 5).join(', ')) +
+          (preview.unknownProcedures.length > 5 ? '…' : '') +
+          '. Импорт возможен.</div>';
+      }
+
+      if (preview.reviewRows.length) {
+        html += '<div class="csv-preview-warning">Строки с NEED_REVIEW не будут импортированы автоматически (' + preview.reviewRows.length + ').</div>';
+      }
+
+      if (preview.validRows.length) {
+        html += `
+          <div class="csv-preview-table-wrap">
+            <table class="payroll-table">
+              <thead><tr><th>Строка</th><th>Дата</th><th>Процедура</th><th>Мастер</th><th class="num">Выручка</th><th class="num">Выплата</th></tr></thead>
+              <tbody>
+                ${preview.validRows.slice(0, 20).map(row => `
+                  <tr>
+                    <td>${row.lineNum}</td>
+                    <td>${escapeHtml(formatDate(row.data.date))}</td>
+                    <td>${escapeHtml(row.data.procedure)}</td>
+                    <td>${escapeHtml(row.data.master)}</td>
+                    <td class="num">${formatMoney(row.data.serviceRevenue)}</td>
+                    <td class="num">${formatMoney(row.data.masterPayout)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+        if (preview.validRows.length > 20) {
+          html += '<div class="hint" style="margin-top:6px">Показаны первые 20 корректных строк из ' + preview.validRows.length + '</div>';
+        }
+      }
+
+      const allIssues = [
+        ...preview.reviewRows.map(r => ({ lineNum: r.lineNum, text: r.reason })),
+        ...preview.errorRows.map(r => ({ lineNum: r.lineNum, text: r.errors.join('; ') }))
+      ];
+
+      if (allIssues.length) {
+        html += `
+          <div class="csv-preview-errors">
+            <div class="csv-preview-errors-title">Строки с ошибками</div>
+            <div class="csv-error-list">
+              ${allIssues.map(item => `
+                <div class="csv-error-item"><strong>Строка ${item.lineNum}:</strong> ${escapeHtml(item.text)}</div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      container.hidden = false;
+      container.innerHTML = html;
+      if (importBtn) importBtn.disabled = validCount === 0;
+    }
+
+    function importCsvProcedureRows(preview) {
+      const rows = preview.validRows;
+      if (!rows.length) {
+        showToast('Нет корректных строк для импорта');
+        return;
+      }
+
+      const duplicateCount = rows.filter(r => findExistingPayrollDuplicate(r.data)).length;
+      if (duplicateCount > 0 && !confirm('Похожие процедуры уже есть. Импортировать повторно?')) {
+        return;
+      }
+
+      const newProcedures = [...new Set(rows.map(r => r.data.procedure).filter(p => !findProcedureByName(p)))];
+      const newMasters = [...new Set(rows.map(r => r.data.master).filter(m => !findEmployeeByName(m)))];
+
+      let imported = 0;
+      const firstDate = rows[0].data.date;
+
+      rows.forEach(row => {
+        const entry = {
+          id: generateId(),
+          date: row.data.date,
+          procedure: row.data.procedure.trim(),
+          master: row.data.master.trim(),
+          serviceRevenue: row.data.serviceRevenue,
+          masterPayout: row.data.masterPayout
+        };
+        syncProcedureLinkedIncome(entry);
+        payrollServiceEntries.push(entry);
+        imported++;
+      });
+
+      savePayrollServiceEntries();
+
+      document.getElementById('csv-import-text').value = '';
+      const fileInput = document.getElementById('csv-import-file');
+      if (fileInput) fileInput.value = '';
+      csvImportPreviewResult = null;
+      document.getElementById('csv-import-preview').hidden = true;
+      document.getElementById('csv-import-preview').innerHTML = '';
+      document.getElementById('csv-import-run-btn').disabled = true;
+
+      if (getMonthKey(firstDate) !== getSelectedMonth()) {
+        budgetMonthInput.value = getMonthKey(firstDate);
+      }
+
+      setPayrollServiceListExpanded(true);
+      renderAll();
+      showToast('Импортировано процедур: ' + imported);
+
+      if (newProcedures.length && confirm('Добавить новые процедуры в справочник?')) {
+        newProcedures.forEach(name => addProcedure(name, 'Импортировано'));
+        showToast('Процедуры добавлены в справочник');
+      }
+
+      if (newMasters.length && confirm('Добавить новых мастеров в справочник?')) {
+        newMasters.forEach(name => addEmployee(name, 'master'));
+        showToast('Мастера добавлены в справочник');
+      }
+    }
+
+    function initCsvImport() {
+      setupDirectoryAccordion('csv-import-accordion', 'csv-import-toggle');
+
+      document.getElementById('csv-import-check-btn')?.addEventListener('click', () => {
+        const text = document.getElementById('csv-import-text')?.value || '';
+        if (!text.trim()) {
+          showToast('Вставьте CSV или загрузите файл');
+          return;
+        }
+        csvImportPreviewResult = buildCsvImportPreview(text);
+        renderCsvImportPreview(csvImportPreviewResult);
+        if (csvImportPreviewResult.parseError) {
+          showToast(csvImportPreviewResult.parseError);
+        } else if (csvImportPreviewResult.validRows.length === 0) {
+          showToast('Корректных строк не найдено');
+        } else {
+          showToast('Найдено корректных строк: ' + csvImportPreviewResult.validRows.length);
+        }
+      });
+
+      document.getElementById('csv-import-run-btn')?.addEventListener('click', () => {
+        if (!csvImportPreviewResult || csvImportPreviewResult.parseError) {
+          showToast('Сначала проверьте CSV');
+          return;
+        }
+        importCsvProcedureRows(csvImportPreviewResult);
+      });
+
+      document.getElementById('csv-import-file')?.addEventListener('change', e => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          document.getElementById('csv-import-text').value = reader.result || '';
+        };
+        reader.onerror = () => showToast('Не удалось прочитать файл');
+        reader.readAsText(file, 'UTF-8');
+      });
+    }
+
     function initPayroll() {
       document.getElementById('payroll-service-form').addEventListener('submit', e => {
         e.preventDefault();
@@ -4201,6 +4686,7 @@
       updateFotHint();
 
       initPayroll();
+      initCsvImport();
       initDirectories();
       initPayrollAutocompletes();
 
