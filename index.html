@@ -542,6 +542,54 @@
       background: var(--expense-bg);
     }
 
+    .row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px 8px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .btn-link {
+      background: none;
+      border: none;
+      padding: 2px 4px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    .btn-link:hover { color: var(--primary); }
+    .btn-link.danger:hover { color: var(--expense); }
+
+    .form-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .form-actions-row .btn { width: auto; flex: 1; min-width: 120px; }
+    .form-actions-row .btn-cancel-edit { flex: 0 0 auto; }
+
+    .payroll-mini-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .cleanup-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .cleanup-actions .btn { font-size: 0.82rem; }
+
     /* История (accordion) */
     .history-accordion {
       padding: 0;
@@ -635,7 +683,7 @@
 
     .history-item {
       display: grid;
-      grid-template-columns: 90px 70px 1fr auto auto;
+      grid-template-columns: 85px 65px 1fr auto auto;
       align-items: center;
       gap: 10px;
       padding: 10px 0;
@@ -655,7 +703,7 @@
       .history-item .hi-type { grid-column: 1; font-size: 0.78rem; }
       .history-item .hi-category { grid-column: 1 / -1; font-weight: 500; }
       .history-item .hi-amount { grid-column: 2; grid-row: 1 / 3; align-self: center; }
-      .history-item .hi-delete { grid-column: 2; grid-row: 3; justify-self: end; }
+      .history-item .hi-actions { grid-column: 1 / -1; justify-self: end; }
     }
 
     .hi-date { color: var(--text-muted); font-variant-numeric: tabular-nums; }
@@ -1250,7 +1298,10 @@
             <div class="hint">Сумма в рублях, больше нуля</div>
             <div class="field-error" id="income-amount-error"></div>
           </div>
-          <button type="submit" class="btn btn-income">Добавить доход</button>
+          <button type="submit" class="btn btn-income" id="income-submit-btn">Добавить доход</button>
+          <div class="form-actions-row" style="margin-top:8px">
+            <button type="button" class="btn btn-secondary btn-cancel-edit" id="income-cancel-edit" hidden>Отмена</button>
+          </div>
         </form>
       </div>
 
@@ -1298,7 +1349,10 @@
             <div class="hint">Сумма в рублях, больше нуля</div>
             <div class="field-error" id="expense-amount-error"></div>
           </div>
-          <button type="submit" class="btn btn-expense">Добавить расход</button>
+          <button type="submit" class="btn btn-expense" id="expense-submit-btn">Добавить расход</button>
+          <div class="form-actions-row" style="margin-top:8px">
+            <button type="button" class="btn btn-secondary btn-cancel-edit" id="expense-cancel-edit" hidden>Отмена</button>
+          </div>
         </form>
       </div>
     </div>
@@ -1449,7 +1503,10 @@
               <div class="hint">Сумма, которую нужно начислить мастеру за эту процедуру</div>
               <div class="field-error" id="ps-payout-error"></div>
             </div>
-            <button type="submit" class="btn btn-income">Добавить процедуру</button>
+            <button type="submit" class="btn btn-income" id="ps-submit-btn">Добавить процедуру</button>
+            <div class="form-actions-row" style="margin-top:8px">
+              <button type="button" class="btn btn-secondary btn-cancel-edit" id="ps-cancel-edit" hidden>Отмена</button>
+            </div>
           </form>
           <div class="payroll-entries">
             <div class="payroll-entries-title">Процедуры за месяц</div>
@@ -1476,7 +1533,10 @@
               <div class="hint">Косметика считается отдельно. Она не входит в базу менеджерских 10%</div>
               <div class="field-error" id="pc-amount-error"></div>
             </div>
-            <button type="submit" class="btn btn-income">Добавить продажу</button>
+            <button type="submit" class="btn btn-income" id="pc-submit-btn">Добавить продажу</button>
+            <div class="form-actions-row" style="margin-top:8px">
+              <button type="button" class="btn btn-secondary btn-cancel-edit" id="pc-cancel-edit" hidden>Отмена</button>
+            </div>
           </form>
           <div class="payroll-entries">
             <div class="payroll-entries-title">Продажи косметики за месяц</div>
@@ -1507,6 +1567,9 @@
           </div>
         </div>
         <div class="manager-calc" id="manager-calc"></div>
+        <div class="payroll-mini-actions">
+          <button type="button" class="btn-link" id="clear-manager-month">Очистить менеджера за месяц</button>
+        </div>
       </div>
 
       <div class="card payroll-card">
@@ -1515,6 +1578,9 @@
           <label for="pf-cleaning">Фиксированная выплата за уборку, ₽</label>
           <input type="number" id="pf-cleaning" min="0" step="0.01" placeholder="0">
           <div class="hint">Фиксированная сумма за уборку за выбранный месяц</div>
+        </div>
+        <div class="payroll-mini-actions">
+          <button type="button" class="btn-link" id="reset-cleaning-month">Сбросить уборку</button>
         </div>
       </div>
     </section>
@@ -1569,8 +1635,14 @@
           </div>
         </div>
       </div>
-      <div class="card placeholder-card">
-        <p>Здесь появятся настройки салона, интеграции с Supabase и параметры рабочего кабинета.</p>
+      <div class="card">
+        <div class="card-title">Очистка данных месяца</div>
+        <p class="section-hint">Действия относятся к месяцу, выбранному в шапке. Восстановить данные будет нельзя.</p>
+        <div class="cleanup-actions">
+          <button type="button" class="btn btn-secondary" id="cleanup-operations-btn">Очистить операции выбранного месяца</button>
+          <button type="button" class="btn btn-secondary" id="cleanup-payroll-btn">Очистить зарплатные данные выбранного месяца</button>
+          <button type="button" class="btn btn-danger" id="cleanup-all-btn">Очистить всё за выбранный месяц</button>
+        </div>
       </div>
     </section>
   </div>
@@ -1608,6 +1680,10 @@
     let payrollSettings = { ...DEFAULT_PAYROLL_SETTINGS };
     let payrollPosted = {};
     let payrollFormSyncing = false;
+    let editingOperationId = null;
+    let editingOperationType = null;
+    let editingServiceId = null;
+    let editingCosmeticsId = null;
 
     // ─── DOM-элементы ────────────────────────────────────────────
     const budgetMonthInput = document.getElementById('budget-month');
@@ -2131,10 +2207,14 @@
           <span class="hi-type"><span class="badge ${badgeClass}">${typeLabel}</span></span>
           <span class="hi-category">${op.category}</span>
           <span class="hi-amount ${amountClass}">${sign}${formatMoney(op.amount)}</span>
-          <button type="button" class="btn-delete" title="Удалить" aria-label="Удалить операцию">✕</button>
+          <span class="hi-actions row-actions">
+            <button type="button" class="btn-link btn-edit-op">Изменить</button>
+            <button type="button" class="btn-link danger btn-del-op">Удалить</button>
+          </span>
         `;
 
-        li.querySelector('.btn-delete').addEventListener('click', () => deleteOperation(op.id));
+        li.querySelector('.btn-edit-op').addEventListener('click', () => startEditOperation(op));
+        li.querySelector('.btn-del-op').addEventListener('click', () => deleteOperation(op.id));
         historyList.appendChild(li);
       });
     }
@@ -2580,17 +2660,22 @@
           <td>${e.master}</td>
           <td class="num">${formatMoney(e.serviceRevenue)}</td>
           <td class="num">${formatMoney(e.masterPayout)}</td>
-          <td><button type="button" class="btn-delete" data-delete-service="${e.id}" title="Удалить" aria-label="Удалить">✕</button></td>
+          <td class="num">
+            <span class="row-actions">
+              <button type="button" class="btn-link btn-edit-service" data-id="${e.id}">Изменить</button>
+              <button type="button" class="btn-link danger btn-del-service" data-id="${e.id}">Удалить</button>
+            </span>
+          </td>
         </tr>
       `).join('');
 
       renderPayrollEntryList('payroll-service-list', rows, 'Процедур за месяц пока нет');
-      document.getElementById('payroll-service-list').querySelectorAll('[data-delete-service]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          payrollServiceEntries = payrollServiceEntries.filter(x => x.id !== btn.dataset.deleteService);
-          savePayrollServiceEntries();
-          renderPayroll();
-        });
+      const serviceList = document.getElementById('payroll-service-list');
+      serviceList.querySelectorAll('.btn-edit-service').forEach(btn => {
+        btn.addEventListener('click', () => startEditService(btn.dataset.id));
+      });
+      serviceList.querySelectorAll('.btn-del-service').forEach(btn => {
+        btn.addEventListener('click', () => deletePayrollService(btn.dataset.id));
       });
     }
 
@@ -2608,18 +2693,23 @@
           <td>${e.seller}</td>
           <td class="num">${formatMoney(e.saleAmount)}</td>
           <td class="num">${formatMoney(bonus)}</td>
-          <td><button type="button" class="btn-delete" data-delete-cosmetics="${e.id}" title="Удалить" aria-label="Удалить">✕</button></td>
+          <td class="num">
+            <span class="row-actions">
+              <button type="button" class="btn-link btn-edit-cosmetics" data-id="${e.id}">Изменить</button>
+              <button type="button" class="btn-link danger btn-del-cosmetics" data-id="${e.id}">Удалить</button>
+            </span>
+          </td>
         </tr>
       `;
       }).join('');
 
       renderPayrollEntryList('payroll-cosmetics-list', rows, 'Продаж косметики за месяц пока нет');
-      document.getElementById('payroll-cosmetics-list').querySelectorAll('[data-delete-cosmetics]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          payrollCosmeticsEntries = payrollCosmeticsEntries.filter(x => x.id !== btn.dataset.deleteCosmetics);
-          savePayrollCosmeticsEntries();
-          renderPayroll();
-        });
+      const cosmeticsList = document.getElementById('payroll-cosmetics-list');
+      cosmeticsList.querySelectorAll('.btn-edit-cosmetics').forEach(btn => {
+        btn.addEventListener('click', () => startEditCosmetics(btn.dataset.id));
+      });
+      cosmeticsList.querySelectorAll('.btn-del-cosmetics').forEach(btn => {
+        btn.addEventListener('click', () => deletePayrollCosmetics(btn.dataset.id));
       });
     }
 
@@ -2721,20 +2811,30 @@
           return;
         }
         showPayrollFieldErrors('ps', fields, { date: '', procedure: '', master: '', revenue: '', payout: '' });
-        payrollServiceEntries.push({
-          id: generateId(),
+        const payload = {
           date,
           procedure: procedure.trim(),
           master: master.trim(),
           serviceRevenue: parseFloat(revenueStr),
           masterPayout: parseFloat(payoutStr)
-        });
+        };
+        if (editingServiceId) {
+          const idx = payrollServiceEntries.findIndex(x => x.id === editingServiceId);
+          if (idx !== -1) {
+            payrollServiceEntries[idx] = { ...payrollServiceEntries[idx], ...payload };
+          }
+          cancelEditServiceForm();
+          showToast('Процедура обновлена');
+        } else {
+          payrollServiceEntries.push({ id: generateId(), ...payload });
+          document.getElementById('ps-procedure').value = '';
+          document.getElementById('ps-master').value = '';
+          document.getElementById('ps-revenue').value = '';
+          document.getElementById('ps-payout').value = '';
+          showToast('Процедура добавлена');
+        }
         savePayrollServiceEntries();
-        document.getElementById('ps-revenue').value = '';
-        document.getElementById('ps-payout').value = '';
-        document.getElementById('ps-procedure').value = '';
         renderPayroll();
-        showToast('Процедура добавлена');
       });
 
       document.getElementById('payroll-cosmetics-form').addEventListener('submit', e => {
@@ -2749,18 +2849,35 @@
           return;
         }
         showPayrollFieldErrors('pc', fields, { date: '', seller: '', amount: '' });
-        payrollCosmeticsEntries.push({
-          id: generateId(),
-          date,
-          seller: seller.trim(),
-          saleAmount: parseFloat(amountStr)
-        });
+        if (editingCosmeticsId) {
+          const idx = payrollCosmeticsEntries.findIndex(x => x.id === editingCosmeticsId);
+          if (idx !== -1) {
+            payrollCosmeticsEntries[idx] = {
+              ...payrollCosmeticsEntries[idx],
+              date,
+              seller: seller.trim(),
+              saleAmount: parseFloat(amountStr)
+            };
+          }
+          cancelEditCosmeticsForm();
+          showToast('Продажа обновлена');
+        } else {
+          payrollCosmeticsEntries.push({
+            id: generateId(),
+            date,
+            seller: seller.trim(),
+            saleAmount: parseFloat(amountStr)
+          });
+          document.getElementById('pc-amount').value = '';
+          document.getElementById('pc-seller').value = '';
+          showToast('Продажа косметики добавлена');
+        }
         savePayrollCosmeticsEntries();
-        document.getElementById('pc-amount').value = '';
-        document.getElementById('pc-seller').value = '';
         renderPayroll();
-        showToast('Продажа косметики добавлена');
       });
+
+      document.getElementById('ps-cancel-edit').addEventListener('click', cancelEditServiceForm);
+      document.getElementById('pc-cancel-edit').addEventListener('click', cancelEditCosmeticsForm);
 
       ['pm-name', 'pm-shifts', 'pm-shift-rate', 'pm-percent'].forEach(id => {
         document.getElementById(id).addEventListener('input', () => {
@@ -2773,6 +2890,9 @@
         saveFixedFormToData();
         renderPayrollSummaryOnly();
       });
+
+      document.getElementById('clear-manager-month').addEventListener('click', clearManagerForMonth);
+      document.getElementById('reset-cleaning-month').addEventListener('click', resetCleaningForMonth);
 
       document.getElementById('post-payroll-btn').addEventListener('click', postPayrollToExpenses);
 
@@ -2797,7 +2917,7 @@
         <div class="manager-calc-row"><span>Итого менеджер</span><span>${formatMoney(calc.managerTotal)}</span></div>
       `;
       document.getElementById('post-payroll-btn').disabled = calc.total <= 0;
-      refreshManagementViews(false);
+      refreshManagementViews();
     }
 
     // ─── CRUD операций ───────────────────────────────────────────
@@ -2822,23 +2942,227 @@
     }
 
     function deleteOperation(id) {
+      if (!confirm('Удалить эту операцию?')) return;
+      if (editingOperationId === id) cancelEditOperation();
       operations = operations.filter(op => op.id !== id);
       saveOperations();
       renderAll();
+      showToast('Операция удалена');
+    }
+
+    function startEditOperation(op) {
+      cancelEditServiceForm();
+      cancelEditCosmeticsForm();
+      editingOperationId = op.id;
+      editingOperationType = op.type;
+      const prefix = op.type;
+      document.getElementById(`${prefix}-date`).value = op.date;
+      document.getElementById(`${prefix}-category`).value = op.category;
+      document.getElementById(`${prefix}-amount`).value = op.amount;
+      document.getElementById(`${prefix}-submit-btn`).textContent = 'Сохранить изменения';
+      document.getElementById(`${prefix}-cancel-edit`).hidden = false;
+      if (op.type === 'expense') updateFotHint();
+      document.getElementById(`${prefix}-form`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function cancelEditOperation() {
+      if (!editingOperationType) return;
+      const prefix = editingOperationType;
+      editingOperationId = null;
+      editingOperationType = null;
+      document.getElementById(`${prefix}-submit-btn`).textContent =
+        prefix === 'income' ? 'Добавить доход' : 'Добавить расход';
+      document.getElementById(`${prefix}-cancel-edit`).hidden = true;
+      document.getElementById(`${prefix}-amount`).value = '';
+      if (prefix === 'expense') updateFotHint();
+    }
+
+    function updateOperation(id, type, date, category, amount) {
+      const idx = operations.findIndex(op => op.id === id);
+      if (idx === -1) return;
+      operations[idx] = { ...operations[idx], type, date, category, amount };
+      saveOperations();
+      budgetMonthInput.value = getMonthKey(date);
+      cancelEditOperation();
+      renderAll();
+      showToast('Операция обновлена');
     }
 
     function clearSelectedMonth() {
+      cleanupMonthOperations(true);
+    }
+
+    function clearPayrollDataForMonth(monthKey, removePostedFotOp) {
+      payrollServiceEntries = payrollServiceEntries.filter(e => getMonthKey(e.date) !== monthKey);
+      payrollCosmeticsEntries = payrollCosmeticsEntries.filter(e => getMonthKey(e.date) !== monthKey);
+      delete payrollManager[monthKey];
+      delete payrollFixed[monthKey];
+
+      const posted = payrollPosted[monthKey];
+      if (posted) {
+        if (removePostedFotOp && posted.operationId) {
+          operations = operations.filter(o => o.id !== posted.operationId);
+          saveOperations();
+        }
+        delete payrollPosted[monthKey];
+        savePayrollPosted();
+      }
+
+      savePayrollServiceEntries();
+      savePayrollCosmeticsEntries();
+      savePayrollManager();
+      savePayrollFixed();
+    }
+
+    function monthHasPayrollData(monthKey) {
+      return payrollServiceEntries.some(e => getMonthKey(e.date) === monthKey)
+        || payrollCosmeticsEntries.some(e => getMonthKey(e.date) === monthKey)
+        || !!payrollManager[monthKey]
+        || (payrollFixed[monthKey]?.amount || 0) > 0
+        || !!payrollPosted[monthKey];
+    }
+
+    function cleanupMonthOperations(fromHistoryBtn) {
       const monthKey = getSelectedMonth();
       const count = getOperationsForMonth(monthKey).length;
-      if (count === 0) return;
-
-      const confirmed = confirm(`Удалить все ${count} операций за выбранный месяц?`);
-      if (!confirmed) return;
-
+      if (count === 0) {
+        if (!fromHistoryBtn) showToast('Нет операций за месяц');
+        return;
+      }
+      if (!confirm('Удалить все доходы и расходы выбранного месяца? Это действие нельзя отменить.')) return;
+      if (editingOperationId) cancelEditOperation();
       operations = operations.filter(op => getMonthKey(op.date) !== monthKey);
       saveOperations();
       renderAll();
-      showToast('Месяц очищен');
+      showToast('Операции месяца удалены');
+    }
+
+    function cleanupMonthPayroll() {
+      const monthKey = getSelectedMonth();
+      if (!monthHasPayrollData(monthKey)) {
+        showToast('Нет зарплатных данных за месяц');
+        return;
+      }
+      if (!confirm('Удалить все зарплатные данные выбранного месяца? Это действие нельзя отменить.')) return;
+      const removePostedFot = isPayrollPosted(monthKey)
+        && confirm('За этот месяц есть зафиксированный ФОТ в расходах. Удалить его тоже?');
+      cancelEditServiceForm();
+      cancelEditCosmeticsForm();
+      clearPayrollDataForMonth(monthKey, removePostedFot);
+      renderAll();
+      showToast('Зарплатные данные удалены');
+    }
+
+    function cleanupMonthAll() {
+      const monthKey = getSelectedMonth();
+      if (!confirm('Удалить все операции и зарплатные данные выбранного месяца? Это действие нельзя отменить.')) return;
+      cancelEditOperation();
+      cancelEditServiceForm();
+      cancelEditCosmeticsForm();
+      operations = operations.filter(op => getMonthKey(op.date) !== monthKey);
+      saveOperations();
+      clearPayrollDataForMonth(monthKey, true);
+      renderAll();
+      showToast('Данные месяца удалены');
+    }
+
+    function cancelEditServiceForm() {
+      editingServiceId = null;
+      document.getElementById('ps-submit-btn').textContent = 'Добавить процедуру';
+      document.getElementById('ps-cancel-edit').hidden = true;
+      document.getElementById('ps-procedure').value = '';
+      document.getElementById('ps-master').value = '';
+      document.getElementById('ps-revenue').value = '';
+      document.getElementById('ps-payout').value = '';
+    }
+
+    function cancelEditCosmeticsForm() {
+      editingCosmeticsId = null;
+      document.getElementById('pc-submit-btn').textContent = 'Добавить продажу';
+      document.getElementById('pc-cancel-edit').hidden = true;
+      document.getElementById('pc-seller').value = '';
+      document.getElementById('pc-amount').value = '';
+    }
+
+    function startEditService(id) {
+      cancelEditCosmeticsForm();
+      cancelEditOperation();
+      const entry = payrollServiceEntries.find(e => e.id === id);
+      if (!entry) return;
+      editingServiceId = id;
+      document.getElementById('ps-date').value = entry.date;
+      document.getElementById('ps-procedure').value = entry.procedure;
+      document.getElementById('ps-master').value = entry.master;
+      document.getElementById('ps-revenue').value = entry.serviceRevenue;
+      document.getElementById('ps-payout').value = entry.masterPayout;
+      document.getElementById('ps-submit-btn').textContent = 'Сохранить изменения';
+      document.getElementById('ps-cancel-edit').hidden = false;
+      document.getElementById('payroll-service-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function startEditCosmetics(id) {
+      cancelEditServiceForm();
+      cancelEditOperation();
+      const entry = payrollCosmeticsEntries.find(e => e.id === id);
+      if (!entry) return;
+      editingCosmeticsId = id;
+      document.getElementById('pc-date').value = entry.date;
+      document.getElementById('pc-seller').value = entry.seller;
+      document.getElementById('pc-amount').value = entry.saleAmount;
+      document.getElementById('pc-submit-btn').textContent = 'Сохранить изменения';
+      document.getElementById('pc-cancel-edit').hidden = false;
+      document.getElementById('payroll-cosmetics-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function deletePayrollService(id) {
+      const entry = payrollServiceEntries.find(e => e.id === id);
+      if (!entry) return;
+      if (!confirm('Удалить эту процедуру?')) return;
+      if (entry.linkedIncomeOperationId && operations.some(o => o.id === entry.linkedIncomeOperationId)) {
+        if (confirm('У этой процедуры есть связанный доход в бюджете. Удалить связанный доход тоже?')) {
+          if (editingOperationId === entry.linkedIncomeOperationId) cancelEditOperation();
+          operations = operations.filter(o => o.id !== entry.linkedIncomeOperationId);
+          saveOperations();
+        }
+      }
+      if (editingServiceId === id) cancelEditServiceForm();
+      payrollServiceEntries = payrollServiceEntries.filter(e => e.id !== id);
+      savePayrollServiceEntries();
+      renderPayroll();
+      showToast('Процедура удалена');
+    }
+
+    function deletePayrollCosmetics(id) {
+      if (!confirm('Удалить эту продажу косметики?')) return;
+      if (editingCosmeticsId === id) cancelEditCosmeticsForm();
+      payrollCosmeticsEntries = payrollCosmeticsEntries.filter(e => e.id !== id);
+      savePayrollCosmeticsEntries();
+      renderPayroll();
+      showToast('Продажа удалена');
+    }
+
+    function clearManagerForMonth() {
+      const monthKey = getSelectedMonth();
+      delete payrollManager[monthKey];
+      savePayrollManager();
+      syncManagerFormFromData();
+      renderPayroll();
+      showToast('Данные менеджера очищены');
+    }
+
+    function resetCleaningForMonth() {
+      const monthKey = getSelectedMonth();
+      delete payrollFixed[monthKey];
+      savePayrollFixed();
+      syncManagerFormFromData();
+      renderPayroll();
+      showToast('Уборка сброшена');
+    }
+
+    function cancelAllEdits() {
+      cancelEditOperation();
+      cancelEditServiceForm();
+      cancelEditCosmeticsForm();
     }
 
     // ─── Обработчики форм ────────────────────────────────────────
@@ -2861,6 +3185,12 @@
 
         clearFieldErrors(prefix);
         const amount = parseFloat(amountStr);
+
+        if (editingOperationId && editingOperationType === type) {
+          updateOperation(editingOperationId, type, date, category, amount);
+          return;
+        }
+
         addOperation(type, date, category, amount);
 
         // Очистка поля суммы после успешного добавления
@@ -2904,6 +3234,7 @@
 
       // Смена месяца — пересчёт и уведомление
       budgetMonthInput.addEventListener('change', () => {
+        cancelAllEdits();
         renderAll();
         showToast('Месяц: ' + formatMonthLabel(getSelectedMonth()));
       });
@@ -2923,7 +3254,14 @@
       handleFormSubmit('expense', expenseForm, 'expense');
 
       // Очистка месяца
-      clearMonthBtn.addEventListener('click', clearSelectedMonth);
+      clearMonthBtn.addEventListener('click', () => cleanupMonthOperations(true));
+
+      document.getElementById('income-cancel-edit').addEventListener('click', cancelEditOperation);
+      document.getElementById('expense-cancel-edit').addEventListener('click', cancelEditOperation);
+
+      document.getElementById('cleanup-operations-btn').addEventListener('click', () => cleanupMonthOperations(false));
+      document.getElementById('cleanup-payroll-btn').addEventListener('click', cleanupMonthPayroll);
+      document.getElementById('cleanup-all-btn').addEventListener('click', cleanupMonthAll);
 
       // Accordion истории
       historyToggle.addEventListener('click', toggleHistoryAccordion);
