@@ -1196,10 +1196,20 @@
       align-items: center;
     }
 
+    .payroll-posted-status {
+      margin-top: 10px;
+      width: 100%;
+    }
+
     .payroll-posted-badge {
-      font-size: 0.78rem;
+      font-size: 0.82rem;
       color: var(--income);
-      font-weight: 500;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .payroll-posted-hint {
+      font-size: 0.75rem;
     }
 
     .payroll-grid {
@@ -1710,7 +1720,11 @@
         <div class="payroll-breakdown" id="payroll-breakdown"></div>
         <div class="payroll-actions">
           <button type="button" class="btn btn-primary" id="post-payroll-btn">Зафиксировать ФОТ в расходы</button>
-          <span class="payroll-posted-badge" id="payroll-posted-badge" hidden></span>
+          <button type="button" class="btn btn-danger" id="unpost-payroll-btn" hidden>Отменить фиксацию ФОТ</button>
+        </div>
+        <div class="payroll-posted-status" id="payroll-posted-status" hidden>
+          <div class="payroll-posted-badge" id="payroll-posted-badge"></div>
+          <div class="hint payroll-posted-hint" id="payroll-posted-hint">Отмена фиксации удалит только расход ФОТ из операций. Зарплатные данные останутся.</div>
         </div>
       </div>
 
@@ -3727,16 +3741,7 @@
         <div class="manager-calc-row"><span>Итого менеджер</span><span>${formatMoney(calc.managerTotal)}</span></div>
       `;
 
-      const posted = payrollPosted[monthKey];
-      const postedBadge = document.getElementById('payroll-posted-badge');
-      const postBtn = document.getElementById('post-payroll-btn');
-      if (posted && posted.operationId && operations.some(o => o.id === posted.operationId)) {
-        postedBadge.hidden = false;
-        postedBadge.textContent = 'Зафиксировано: ' + formatMoney(posted.amount);
-      } else {
-        postedBadge.hidden = true;
-      }
-      postBtn.disabled = calc.total <= 0;
+      updatePayrollPostedUi(monthKey, calc);
 
       renderPayrollServiceList(monthKey);
       renderPayrollCosmeticsList(monthKey);
@@ -3749,6 +3754,81 @@
       if (includeAnalytics !== false) renderAnalytics();
     }
 
+    /** Обновить кнопки и статус фиксации ФОТ за месяц */
+    function updatePayrollPostedUi(monthKey, calc) {
+      const posted = payrollPosted[monthKey];
+      const hasPosted = isPayrollPosted(monthKey);
+      const statusEl = document.getElementById('payroll-posted-status');
+      const postedBadge = document.getElementById('payroll-posted-badge');
+      const postBtn = document.getElementById('post-payroll-btn');
+      const unpostBtn = document.getElementById('unpost-payroll-btn');
+
+      if (hasPosted && posted) {
+        if (statusEl) statusEl.hidden = false;
+        if (postedBadge) {
+          postedBadge.textContent = 'ФОТ за месяц зафиксирован в расходах: ' + formatMoney(posted.amount);
+        }
+        if (postBtn) {
+          postBtn.textContent = 'Обновить зафиксированный ФОТ';
+          postBtn.disabled = calc.total <= 0;
+        }
+        if (unpostBtn) unpostBtn.hidden = false;
+      } else {
+        if (statusEl) statusEl.hidden = true;
+        if (postedBadge) postedBadge.textContent = '';
+        if (postBtn) {
+          postBtn.textContent = 'Зафиксировать ФОТ в расходы';
+          postBtn.disabled = calc.total <= 0;
+        }
+        if (unpostBtn) unpostBtn.hidden = true;
+      }
+    }
+
+    function findPostedPayrollOperationId(monthKey) {
+      const posted = payrollPosted[monthKey];
+      if (!posted) return null;
+
+      if (posted.operationId && operations.some(o => o.id === posted.operationId)) {
+        return posted.operationId;
+      }
+
+      if (posted.amount == null) return null;
+
+      const lastDay = getLastDayOfMonth(monthKey);
+      const linked = operations.filter(o =>
+        o.type === 'expense' &&
+        o.category === CATEGORY_FOT &&
+        getMonthKey(o.date) === monthKey &&
+        o.date === lastDay &&
+        Math.abs(o.amount - posted.amount) < 0.005
+      );
+
+      return linked.length === 1 ? linked[0].id : null;
+    }
+
+    function unpostPayrollFromExpenses() {
+      const monthKey = getSelectedMonth();
+      if (!isPayrollPosted(monthKey)) {
+        showToast('ФОТ за этот месяц не зафиксирован');
+        return;
+      }
+
+      if (!confirm('Отменить фиксацию ФОТ за выбранный месяц? Зарплатные данные останутся, удалится только расход «Фонд оплаты труда».')) {
+        return;
+      }
+
+      const opId = findPostedPayrollOperationId(monthKey);
+      if (opId) {
+        operations = operations.filter(o => o.id !== opId);
+        saveOperations();
+      }
+
+      delete payrollPosted[monthKey];
+      savePayrollPosted();
+      renderAll();
+      showToast('Фиксация ФОТ отменена');
+    }
+
     function postPayrollToExpenses() {
       const monthKey = getSelectedMonth();
       const calc = calculatePayroll(monthKey);
@@ -3758,7 +3838,7 @@
       }
 
       const posted = payrollPosted[monthKey];
-      const hasPosted = posted && posted.operationId && operations.some(o => o.id === posted.operationId);
+      const hasPosted = isPayrollPosted(monthKey);
 
       const msg = hasPosted
         ? `Заменить зафиксированный ФОТ (${formatMoney(posted.amount)}) на ${formatMoney(calc.total)}?`
@@ -3767,7 +3847,10 @@
       if (!confirm(msg)) return;
 
       if (hasPosted) {
-        operations = operations.filter(o => o.id !== posted.operationId);
+        const opId = findPostedPayrollOperationId(monthKey);
+        if (opId) {
+          operations = operations.filter(o => o.id !== opId);
+        }
       }
 
       const op = {
@@ -4375,6 +4458,7 @@
       document.getElementById('reset-cleaning-month').addEventListener('click', resetCleaningForMonth);
 
       document.getElementById('post-payroll-btn').addEventListener('click', postPayrollToExpenses);
+      document.getElementById('unpost-payroll-btn').addEventListener('click', unpostPayrollFromExpenses);
 
       document.getElementById('ps-date').value = getTodayDate();
       document.getElementById('pc-date').value = getTodayDate();
@@ -4399,7 +4483,7 @@
         <div class="manager-calc-row"><span>Процентная часть</span><span>${formatMoney(calc.managerPercentPay)}</span></div>
         <div class="manager-calc-row"><span>Итого менеджер</span><span>${formatMoney(calc.managerTotal)}</span></div>
       `;
-      document.getElementById('post-payroll-btn').disabled = calc.total <= 0;
+      updatePayrollPostedUi(monthKey, calc);
       refreshManagementViews();
     }
 
