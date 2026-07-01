@@ -353,6 +353,28 @@
     .summary-item.income .value { color: var(--income); }
     .summary-item.expense .value { color: var(--expense); }
 
+    .fot-badge {
+      display: inline-block;
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 1px 6px;
+      border-radius: 10px;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+
+    .fot-badge.preliminary {
+      background: rgba(91, 106, 240, 0.15);
+      color: var(--primary);
+    }
+
+    .fot-badge.fixed {
+      background: var(--income-bg);
+      color: var(--income);
+    }
+
     /* Главная карточка прибыли */
     .profit-card {
       border-radius: var(--radius);
@@ -1163,10 +1185,10 @@
     <!-- Дашборд -->
     <section class="tab-panel is-active" id="tab-dashboard" role="tabpanel" aria-labelledby="tab-btn-dashboard">
       <div class="profit-card positive" id="profit-card">
-        <div class="profit-label">Чистая прибыль</div>
+        <div class="profit-label">Управленческая прибыль</div>
         <div class="profit-value" id="net-profit">0 ₽</div>
       </div>
-      <p class="section-hint">В будущем здесь появится живой ФОТ и управленческая прибыль.</p>
+      <p class="section-hint" id="dashboard-hint">Итоги учитывают доходы, расходы и ФОТ за выбранный месяц.</p>
 
       <div class="summary-grid" id="summary-grid">
       <div class="summary-item income">
@@ -1178,7 +1200,7 @@
         <div class="value" id="expenses-without-fot-rent">0 ₽</div>
       </div>
       <div class="summary-item expense">
-        <div class="label">Фонд оплаты труда</div>
+        <div class="label">Фонд оплаты труда <span id="fot-source-badge" class="fot-badge preliminary" hidden></span></div>
         <div class="value" id="fot-amount">0 ₽</div>
       </div>
       <div class="summary-item expense">
@@ -1192,6 +1214,10 @@
       <div class="summary-item expense">
         <div class="label">Итого расходов с арендой</div>
         <div class="value" id="total-with-rent">0 ₽</div>
+      </div>
+      <div class="summary-item">
+        <div class="label">Бухгалтерская прибыль</div>
+        <div class="value" id="accounting-profit">0 ₽</div>
       </div>
     </div>
     </section>
@@ -1348,7 +1374,7 @@
                 <th>Месяц</th>
                 <th>Доходы</th>
                 <th>Расходы</th>
-                <th>Чистая прибыль</th>
+                <th>Управл. прибыль</th>
                 <th>Δ доходы</th>
                 <th>Δ расходы</th>
                 <th>Δ прибыль</th>
@@ -1674,13 +1700,24 @@
       return Array.from(keys).sort();
     }
 
-    /** Статистика по каждому месяцу */
-    function getAllMonthStats() {
-      return getAllMonthKeys().map(monthKey => {
-        const monthOps = getOperationsForMonth(monthKey);
-        const s = calculateSummary(monthOps);
-        return { monthKey, ...s };
+    /** Месяцы с операциями или зарплатными данными */
+    function getAllBudgetMonthKeys() {
+      const keys = new Set(getAllMonthKeys());
+      payrollServiceEntries.forEach(e => keys.add(getMonthKey(e.date)));
+      payrollCosmeticsEntries.forEach(e => keys.add(getMonthKey(e.date)));
+      Object.keys(payrollManager).forEach(k => keys.add(k));
+      Object.keys(payrollFixed).forEach(k => {
+        if ((payrollFixed[k]?.amount || 0) > 0) keys.add(k);
       });
+      return Array.from(keys).sort();
+    }
+
+    /** Статистика по каждому месяцу (управленческая) */
+    function getAllMonthStats() {
+      return getAllBudgetMonthKeys().map(monthKey => ({
+        monthKey,
+        ...calculateManagementSummary(monthKey)
+      }));
     }
 
     /** Форматирование изменения к предыдущему месяцу */
@@ -1875,6 +1912,53 @@
       };
     }
 
+    /** ФОТ зафиксирован в расходах через зарплатный модуль */
+    function isPayrollPosted(monthKey) {
+      const posted = payrollPosted[monthKey];
+      return !!(posted && posted.operationId && operations.some(o => o.id === posted.operationId));
+    }
+
+    /** Эффективный ФОТ для управленческой сводки */
+    function getEffectiveFot(monthKey, accounting, payrollCalc) {
+      if (isPayrollPosted(monthKey)) {
+        return { amount: accounting.fot, source: 'fixed' };
+      }
+      if (payrollCalc.total > 0) {
+        return { amount: payrollCalc.total, source: 'preliminary' };
+      }
+      if (accounting.fot > 0) {
+        return { amount: accounting.fot, source: 'manual' };
+      }
+      return { amount: 0, source: 'none' };
+    }
+
+    /** Управленческая сводка: учитывает предварительный ФОТ до фиксации */
+    function calculateManagementSummary(monthKey) {
+      const monthOps = getOperationsForMonth(monthKey);
+      const accounting = calculateSummary(monthOps);
+      const payrollCalc = calculatePayroll(monthKey);
+      const effective = getEffectiveFot(monthKey, accounting, payrollCalc);
+
+      const totalWithoutRent = accounting.expensesWithoutFotRent + effective.amount;
+      const totalWithRent = totalWithoutRent + accounting.rent;
+      const managementProfit = accounting.totalIncome - totalWithRent;
+
+      return {
+        totalIncome: accounting.totalIncome,
+        expensesWithoutFotRent: accounting.expensesWithoutFotRent,
+        fot: effective.amount,
+        fotSource: effective.source,
+        preliminaryFot: payrollCalc.total,
+        accountingFot: accounting.fot,
+        rent: accounting.rent,
+        totalWithoutRent,
+        totalWithRent,
+        netProfit: managementProfit,
+        managementProfit,
+        accountingProfit: accounting.netProfit
+      };
+    }
+
     /** Группировка сумм по категориям, сортировка по убыванию */
     function groupByCategory(monthOps, type) {
       const map = {};
@@ -1949,8 +2033,7 @@
 
     function renderSummary() {
       const monthKey = getSelectedMonth();
-      const monthOps = getOperationsForMonth(monthKey);
-      const s = calculateSummary(monthOps);
+      const s = calculateManagementSummary(monthKey);
 
       document.getElementById('total-income').textContent = formatMoney(s.totalIncome);
       document.getElementById('expenses-without-fot-rent').textContent = formatMoney(s.expensesWithoutFotRent);
@@ -1958,11 +2041,31 @@
       document.getElementById('rent-amount').textContent = formatMoney(s.rent);
       document.getElementById('total-without-rent').textContent = formatMoney(s.totalWithoutRent);
       document.getElementById('total-with-rent').textContent = formatMoney(s.totalWithRent);
+      document.getElementById('accounting-profit').textContent = formatMoney(s.accountingProfit);
 
-      netProfitEl.textContent = formatMoney(s.netProfit);
+      const badge = document.getElementById('fot-source-badge');
+      if (s.fotSource === 'preliminary') {
+        badge.hidden = false;
+        badge.textContent = 'предварительно';
+        badge.className = 'fot-badge preliminary';
+      } else if (s.fotSource === 'fixed') {
+        badge.hidden = false;
+        badge.textContent = 'зафиксировано';
+        badge.className = 'fot-badge fixed';
+      } else {
+        badge.hidden = true;
+      }
 
-      // Визуальное выделение прибыли / убытка
-      if (s.netProfit >= 0) {
+      const hintEl = document.getElementById('dashboard-hint');
+      if (s.fotSource === 'preliminary') {
+        hintEl.textContent = 'В расчёт включён предварительный ФОТ из вкладки «Зарплаты». В истории операций он появится после фиксации.';
+      } else {
+        hintEl.textContent = 'Итоги учитывают доходы, расходы и ФОТ за выбранный месяц.';
+      }
+
+      netProfitEl.textContent = formatMoney(s.managementProfit);
+
+      if (s.managementProfit >= 0) {
         profitCard.classList.remove('negative');
         profitCard.classList.add('positive');
       } else {
@@ -2553,6 +2656,13 @@
 
       renderPayrollServiceList(monthKey);
       renderPayrollCosmeticsList(monthKey);
+      refreshManagementViews();
+    }
+
+    /** Обновить дашборд и аналитику после изменения зарплатных данных */
+    function refreshManagementViews(includeAnalytics) {
+      renderSummary();
+      if (includeAnalytics !== false) renderAnalytics();
     }
 
     function postPayrollToExpenses() {
@@ -2687,6 +2797,7 @@
         <div class="manager-calc-row"><span>Итого менеджер</span><span>${formatMoney(calc.managerTotal)}</span></div>
       `;
       document.getElementById('post-payroll-btn').disabled = calc.total <= 0;
+      refreshManagementViews(false);
     }
 
     // ─── CRUD операций ───────────────────────────────────────────
