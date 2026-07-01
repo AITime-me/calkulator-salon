@@ -1265,6 +1265,24 @@
       padding: 10px 0;
     }
 
+    .payroll-entries-accordion {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .payroll-entries-accordion .history-toggle {
+      padding: 10px 12px;
+    }
+
+    .payroll-entries-accordion .history-panel-inner {
+      padding: 0 12px;
+    }
+
+    .payroll-entries-accordion.is-open .history-panel-inner {
+      padding-bottom: 12px;
+    }
+
     .manager-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1608,8 +1626,8 @@
             </div>
             <div class="field" id="ps-revenue-field">
               <label for="ps-revenue">Выручка по услуге, ₽</label>
-              <input type="number" id="ps-revenue" min="0.01" step="0.01" placeholder="0">
-              <div class="hint">Сумма, которую клиент оплатил за процедуру. Автоматически попадёт в доход «Услуги» в бюджете</div>
+              <input type="number" id="ps-revenue" min="0" step="0.01" placeholder="0">
+              <div class="hint">Сумма, которую клиент оплатил за процедуру. Если 0 — доход «Услуги» не создаётся (например, оплата по курсу заранее). Выплата мастеру всё равно учитывается в ФОТ</div>
               <div class="field-error" id="ps-revenue-error"></div>
             </div>
             <div class="field" id="ps-payout-field">
@@ -1623,9 +1641,19 @@
               <button type="button" class="btn btn-secondary btn-cancel-edit" id="ps-cancel-edit" hidden>Отмена</button>
             </div>
           </form>
-          <div class="payroll-entries">
-            <div class="payroll-entries-title">Процедуры за месяц</div>
-            <div id="payroll-service-list"></div>
+          <div class="payroll-entries history-accordion payroll-entries-accordion" id="payroll-service-accordion">
+            <button type="button" class="history-toggle" id="payroll-service-toggle" aria-expanded="false">
+              <span class="history-toggle-left">
+                <span class="history-toggle-title">Процедуры за месяц</span>
+                <span class="history-count" id="payroll-service-count"></span>
+              </span>
+              <span class="history-chevron" aria-hidden="true">▼</span>
+            </button>
+            <div class="history-panel">
+              <div class="history-panel-inner">
+                <div id="payroll-service-list"></div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1963,6 +1991,7 @@
     // ─── Состояние ───────────────────────────────────────────────
     let operations = [];
     let historyExpanded = false;
+    let payrollServiceListExpanded = false;
     let activeTab = 'dashboard';
     let payrollServiceEntries = [];
     let payrollCosmeticsEntries = [];
@@ -2138,6 +2167,16 @@
       return count + ' операций';
     }
 
+    /** Склонение «процедура» */
+    function pluralProcedures(count) {
+      const abs = Math.abs(count) % 100;
+      const n1 = abs % 10;
+      if (abs > 10 && abs < 20) return count + ' процедур';
+      if (n1 === 1) return count + ' процедура';
+      if (n1 >= 2 && n1 <= 4) return count + ' процедуры';
+      return count + ' процедур';
+    }
+
     /** Раскрытие / сворачивание истории */
     function setHistoryExpanded(expanded) {
       historyExpanded = expanded;
@@ -2147,6 +2186,20 @@
 
     function toggleHistoryAccordion() {
       setHistoryExpanded(!historyExpanded);
+    }
+
+    /** Раскрытие / сворачивание списка процедур за месяц */
+    function setPayrollServiceListExpanded(expanded) {
+      payrollServiceListExpanded = expanded;
+      const accordion = document.getElementById('payroll-service-accordion');
+      const toggle = document.getElementById('payroll-service-toggle');
+      if (!accordion || !toggle) return;
+      toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      accordion.classList.toggle('is-open', expanded);
+    }
+
+    function togglePayrollServiceList() {
+      setPayrollServiceListExpanded(!payrollServiceListExpanded);
     }
 
     /** Переключение вкладок рабочего кабинета */
@@ -3399,7 +3452,7 @@
       if (!master.trim()) errors.master = 'Укажите мастера';
       const rev = parseFloat(revenueStr);
       const pay = parseFloat(payoutStr);
-      if (revenueStr === '' || isNaN(rev) || rev <= 0) errors.revenue = 'Сумма должна быть больше нуля';
+      if (revenueStr === '' || isNaN(rev) || rev < 0) errors.revenue = 'Укажите сумму от 0 ₽';
       if (payoutStr === '' || isNaN(pay) || pay <= 0) errors.payout = 'Сумма должна быть больше нуля';
       return errors;
     }
@@ -3442,6 +3495,11 @@
       const entries = payrollServiceEntries
         .filter(e => getMonthKey(e.date) === monthKey)
         .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+
+      const countEl = document.getElementById('payroll-service-count');
+      if (countEl) {
+        countEl.textContent = entries.length ? pluralProcedures(entries.length) : 'нет записей';
+      }
 
       const rows = entries.map(e => `
         <tr>
@@ -3756,6 +3814,9 @@
 
       document.getElementById('ps-date').value = getTodayDate();
       document.getElementById('pc-date').value = getTodayDate();
+
+      document.getElementById('payroll-service-toggle')?.addEventListener('click', togglePayrollServiceList);
+      setPayrollServiceListExpanded(false);
     }
 
     function renderPayrollSummaryOnly() {
