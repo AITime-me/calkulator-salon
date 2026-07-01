@@ -972,6 +972,161 @@
       color: var(--text-muted);
       margin-bottom: 12px;
     }
+
+    /* Зарплаты / ФОТ */
+    .payroll-summary {
+      background: var(--surface);
+      border: 2px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .payroll-summary-total {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--primary);
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 12px;
+    }
+
+    .payroll-breakdown {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .payroll-breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.84rem;
+      gap: 12px;
+    }
+
+    .payroll-breakdown-row span:last-child {
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .payroll-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .payroll-posted-badge {
+      font-size: 0.78rem;
+      color: var(--income);
+      font-weight: 500;
+    }
+
+    .payroll-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 800px) {
+      .payroll-grid { grid-template-columns: 1fr; }
+    }
+
+    .payroll-card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+
+    .payroll-entries {
+      margin-top: 14px;
+    }
+
+    .payroll-entries-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .payroll-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+
+    .payroll-table th,
+    .payroll-table td {
+      padding: 7px 4px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .payroll-table th {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .payroll-table td.num,
+    .payroll-table th.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .payroll-table tr:last-child td { border-bottom: none; }
+
+    .payroll-empty {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      padding: 10px 0;
+    }
+
+    .manager-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .manager-grid { grid-template-columns: 1fr; }
+    }
+
+    .manager-calc {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+    }
+
+    .manager-calc-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      gap: 8px;
+    }
+
+    .manager-calc-row:last-child {
+      margin-bottom: 0;
+      font-weight: 600;
+      padding-top: 6px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      font-size: 0.88rem;
+      padding: 9px 18px;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
   </style>
 </head>
 <body>
@@ -1224,8 +1379,117 @@
 
     <!-- Зарплаты -->
     <section class="tab-panel" id="tab-salaries" role="tabpanel" aria-labelledby="tab-btn-salaries" hidden>
-      <div class="card placeholder-card">
-        <p>Здесь будет живой расчёт зарплат, ФОТ, косметики, уборки и менеджерских начислений.</p>
+      <p class="section-hint">Предварительный расчёт ФОТ за выбранный месяц. В расходы попадает только после фиксации.</p>
+
+      <div class="payroll-summary" id="payroll-summary">
+        <div class="payroll-summary-label card-title" style="margin-bottom:8px">Предварительный ФОТ</div>
+        <div class="payroll-summary-total" id="payroll-total">0 ₽</div>
+        <div class="payroll-breakdown" id="payroll-breakdown"></div>
+        <div class="payroll-actions">
+          <button type="button" class="btn btn-primary" id="post-payroll-btn">Зафиксировать ФОТ в расходы</button>
+          <span class="payroll-posted-badge" id="payroll-posted-badge" hidden></span>
+        </div>
+      </div>
+
+      <div class="payroll-grid">
+        <div class="card payroll-card">
+          <h2>Добавить процедуру в зарплатный расчёт</h2>
+          <form id="payroll-service-form" novalidate>
+            <div class="field" id="ps-date-field">
+              <label for="ps-date">Дата</label>
+              <input type="date" id="ps-date">
+              <div class="hint">Операция попадёт в месяц по выбранной дате</div>
+              <div class="field-error" id="ps-date-error"></div>
+            </div>
+            <div class="field" id="ps-procedure-field">
+              <label for="ps-procedure">Процедура</label>
+              <input type="text" id="ps-procedure" placeholder="Например, окрашивание">
+              <div class="field-error" id="ps-procedure-error"></div>
+            </div>
+            <div class="field" id="ps-master-field">
+              <label for="ps-master">Мастер</label>
+              <input type="text" id="ps-master" placeholder="Имя мастера">
+              <div class="field-error" id="ps-master-error"></div>
+            </div>
+            <div class="field" id="ps-revenue-field">
+              <label for="ps-revenue">Выручка по услуге, ₽</label>
+              <input type="number" id="ps-revenue" min="0.01" step="0.01" placeholder="0">
+              <div class="hint">Сумма, которую клиент оплатил за процедуру. Косметику сюда не включаем</div>
+              <div class="field-error" id="ps-revenue-error"></div>
+            </div>
+            <div class="field" id="ps-payout-field">
+              <label for="ps-payout">Выплата мастеру, ₽</label>
+              <input type="number" id="ps-payout" min="0.01" step="0.01" placeholder="0">
+              <div class="hint">Сумма, которую нужно начислить мастеру за эту процедуру</div>
+              <div class="field-error" id="ps-payout-error"></div>
+            </div>
+            <button type="submit" class="btn btn-income">Добавить процедуру</button>
+          </form>
+          <div class="payroll-entries">
+            <div class="payroll-entries-title">Процедуры за месяц</div>
+            <div id="payroll-service-list"></div>
+          </div>
+        </div>
+
+        <div class="card payroll-card">
+          <h2>Добавить продажу косметики</h2>
+          <form id="payroll-cosmetics-form" novalidate>
+            <div class="field" id="pc-date-field">
+              <label for="pc-date">Дата</label>
+              <input type="date" id="pc-date">
+              <div class="field-error" id="pc-date-error"></div>
+            </div>
+            <div class="field" id="pc-seller-field">
+              <label for="pc-seller">Продавец</label>
+              <input type="text" id="pc-seller" placeholder="Имя продавца">
+              <div class="field-error" id="pc-seller-error"></div>
+            </div>
+            <div class="field" id="pc-amount-field">
+              <label for="pc-amount">Сумма продажи косметики, ₽</label>
+              <input type="number" id="pc-amount" min="0.01" step="0.01" placeholder="0">
+              <div class="hint">Косметика считается отдельно. Она не входит в базу менеджерских 10%</div>
+              <div class="field-error" id="pc-amount-error"></div>
+            </div>
+            <button type="submit" class="btn btn-income">Добавить продажу</button>
+          </form>
+          <div class="payroll-entries">
+            <div class="payroll-entries-title">Продажи косметики за месяц</div>
+            <div id="payroll-cosmetics-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card payroll-card">
+        <h2>Менеджер</h2>
+        <p class="section-hint">Проценты считаются только от выручки по услугам, без косметики.</p>
+        <div class="manager-grid">
+          <div class="field">
+            <label for="pm-name">Имя менеджера</label>
+            <input type="text" id="pm-name" placeholder="Имя">
+          </div>
+          <div class="field">
+            <label for="pm-shifts">Количество смен за месяц</label>
+            <input type="number" id="pm-shifts" min="0" step="1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="pm-shift-rate">Ставка за смену, ₽</label>
+            <input type="number" id="pm-shift-rate" min="0" step="0.01" value="1200">
+          </div>
+          <div class="field">
+            <label for="pm-percent">Процент от выручки по услугам, %</label>
+            <input type="number" id="pm-percent" min="0" step="0.01" value="10">
+          </div>
+        </div>
+        <div class="manager-calc" id="manager-calc"></div>
+      </div>
+
+      <div class="card payroll-card">
+        <h2>Уборка</h2>
+        <div class="field">
+          <label for="pf-cleaning">Фиксированная выплата за уборку, ₽</label>
+          <input type="number" id="pf-cleaning" min="0" step="0.01" placeholder="0">
+          <div class="hint">Фиксированная сумма за уборку за выбранный месяц</div>
+        </div>
       </div>
     </section>
 
@@ -1295,11 +1559,29 @@
     const VALID_TABS = ['dashboard', 'operations', 'analytics', 'salaries', 'categories', 'promotions', 'okr', 'archive', 'settings'];
     const CATEGORY_FOT = 'Фонд оплаты труда';
     const CATEGORY_RENT = 'Аренда';
+    const PAYROLL_SERVICE_KEY = 'salon-budget-payroll-service-entries';
+    const PAYROLL_COSMETICS_KEY = 'salon-budget-payroll-cosmetics-entries';
+    const PAYROLL_MANAGER_KEY = 'salon-budget-payroll-manager';
+    const PAYROLL_FIXED_KEY = 'salon-budget-payroll-fixed';
+    const PAYROLL_SETTINGS_KEY = 'salon-budget-payroll-settings';
+    const PAYROLL_POSTED_KEY = 'salon-budget-payroll-posted';
+    const DEFAULT_PAYROLL_SETTINGS = {
+      cosmeticsPercent: 10,
+      managerShiftRateDefault: 1200,
+      managerPercentDefault: 10
+    };
 
     // ─── Состояние ───────────────────────────────────────────────
     let operations = [];
     let historyExpanded = false;
     let activeTab = 'dashboard';
+    let payrollServiceEntries = [];
+    let payrollCosmeticsEntries = [];
+    let payrollManager = {};
+    let payrollFixed = {};
+    let payrollSettings = { ...DEFAULT_PAYROLL_SETTINGS };
+    let payrollPosted = {};
+    let payrollFormSyncing = false;
 
     // ─── DOM-элементы ────────────────────────────────────────────
     const budgetMonthInput = document.getElementById('budget-month');
@@ -1371,6 +1653,18 @@
       const [y, m] = monthKey.split('-');
       const date = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1);
       return date.toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' });
+    }
+
+    /** Количество календарных дней в месяце */
+    function getDaysInMonth(monthKey) {
+      const [y, m] = monthKey.split('-').map(Number);
+      return new Date(y, m, 0).getDate();
+    }
+
+    /** Последний день месяца YYYY-MM-DD */
+    function getLastDayOfMonth(monthKey) {
+      const days = getDaysInMonth(monthKey);
+      return monthKey + '-' + String(days).padStart(2, '0');
     }
 
     /** Все месяцы с операциями, отсортированные по возрастанию */
@@ -1747,6 +2041,7 @@
       renderHistory();
       renderBreakdown();
       renderAnalytics();
+      renderPayroll();
     }
 
     // ─── Аналитика ───────────────────────────────────────────────
@@ -1995,6 +2290,405 @@
       reader.readAsText(file);
     }
 
+    // ─── Зарплаты / ФОТ ──────────────────────────────────────────
+
+    function loadJsonStorage(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    function saveJsonStorage(key, data) {
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    function loadPayrollData() {
+      payrollServiceEntries = loadJsonStorage(PAYROLL_SERVICE_KEY, []);
+      payrollCosmeticsEntries = loadJsonStorage(PAYROLL_COSMETICS_KEY, []);
+      payrollManager = loadJsonStorage(PAYROLL_MANAGER_KEY, {});
+      payrollFixed = loadJsonStorage(PAYROLL_FIXED_KEY, {});
+      payrollSettings = { ...DEFAULT_PAYROLL_SETTINGS, ...loadJsonStorage(PAYROLL_SETTINGS_KEY, {}) };
+      payrollPosted = loadJsonStorage(PAYROLL_POSTED_KEY, {});
+      if (!Array.isArray(payrollServiceEntries)) payrollServiceEntries = [];
+      if (!Array.isArray(payrollCosmeticsEntries)) payrollCosmeticsEntries = [];
+    }
+
+    function savePayrollServiceEntries() {
+      saveJsonStorage(PAYROLL_SERVICE_KEY, payrollServiceEntries);
+    }
+
+    function savePayrollCosmeticsEntries() {
+      saveJsonStorage(PAYROLL_COSMETICS_KEY, payrollCosmeticsEntries);
+    }
+
+    function savePayrollManager() {
+      saveJsonStorage(PAYROLL_MANAGER_KEY, payrollManager);
+    }
+
+    function savePayrollFixed() {
+      saveJsonStorage(PAYROLL_FIXED_KEY, payrollFixed);
+    }
+
+    function savePayrollPosted() {
+      saveJsonStorage(PAYROLL_POSTED_KEY, payrollPosted);
+    }
+
+    function getManagerData(monthKey) {
+      const saved = payrollManager[monthKey];
+      return {
+        name: saved?.name || '',
+        shifts: saved?.shifts ?? 0,
+        shiftRate: saved?.shiftRate ?? payrollSettings.managerShiftRateDefault ?? 1200,
+        revenuePercent: saved?.revenuePercent ?? payrollSettings.managerPercentDefault ?? 10
+      };
+    }
+
+    function getFixedData(monthKey) {
+      return { amount: payrollFixed[monthKey]?.amount ?? 0 };
+    }
+
+    function syncManagerFormFromData() {
+      payrollFormSyncing = true;
+      const monthKey = getSelectedMonth();
+      const m = getManagerData(monthKey);
+      document.getElementById('pm-name').value = m.name;
+      document.getElementById('pm-shifts').value = m.shifts;
+      document.getElementById('pm-shift-rate').value = m.shiftRate;
+      document.getElementById('pm-percent').value = m.revenuePercent;
+      const fixed = getFixedData(monthKey);
+      document.getElementById('pf-cleaning').value = fixed.amount || '';
+      payrollFormSyncing = false;
+    }
+
+    function saveManagerFormToData() {
+      if (payrollFormSyncing) return;
+      const monthKey = getSelectedMonth();
+      payrollManager[monthKey] = {
+        name: document.getElementById('pm-name').value.trim(),
+        shifts: parseInt(document.getElementById('pm-shifts').value, 10) || 0,
+        shiftRate: parseFloat(document.getElementById('pm-shift-rate').value) || 0,
+        revenuePercent: parseFloat(document.getElementById('pm-percent').value) || 0
+      };
+      savePayrollManager();
+    }
+
+    function saveFixedFormToData() {
+      if (payrollFormSyncing) return;
+      const monthKey = getSelectedMonth();
+      const amount = parseFloat(document.getElementById('pf-cleaning').value);
+      payrollFixed[monthKey] = { amount: isNaN(amount) ? 0 : Math.max(0, amount) };
+      savePayrollFixed();
+    }
+
+    function calculatePayroll(monthKey) {
+      const serviceEntries = payrollServiceEntries.filter(e => getMonthKey(e.date) === monthKey);
+      const cosmeticsEntries = payrollCosmeticsEntries.filter(e => getMonthKey(e.date) === monthKey);
+      const manager = getManagerData(monthKey);
+      const fixed = getFixedData(monthKey);
+      const cosmeticsPercent = payrollSettings.cosmeticsPercent ?? 10;
+      const daysInMonth = getDaysInMonth(monthKey);
+
+      const mastersTotal = serviceEntries.reduce((s, e) => s + e.masterPayout, 0);
+      const serviceRevenue = serviceEntries.reduce((s, e) => s + e.serviceRevenue, 0);
+      const cosmeticsTotal = cosmeticsEntries.reduce(
+        (s, e) => s + e.saleAmount * cosmeticsPercent / 100, 0
+      );
+
+      const shifts = manager.shifts || 0;
+      const managerShiftPay = shifts * (manager.shiftRate || 0);
+      const managerPercentPay = daysInMonth > 0
+        ? serviceRevenue * (manager.revenuePercent || 0) / 100 / daysInMonth * shifts
+        : 0;
+      const managerTotal = managerShiftPay + managerPercentPay;
+      const cleaningTotal = fixed.amount || 0;
+      const total = mastersTotal + cosmeticsTotal + managerTotal + cleaningTotal;
+
+      return {
+        mastersTotal,
+        serviceRevenue,
+        cosmeticsTotal,
+        cosmeticsPercent,
+        managerShiftPay,
+        managerPercentPay,
+        managerTotal,
+        cleaningTotal,
+        total
+      };
+    }
+
+    function validatePayrollService(date, procedure, master, revenueStr, payoutStr) {
+      const errors = { date: '', procedure: '', master: '', revenue: '', payout: '' };
+      if (!date) errors.date = 'Укажите дату';
+      if (!procedure.trim()) errors.procedure = 'Укажите процедуру';
+      if (!master.trim()) errors.master = 'Укажите мастера';
+      const rev = parseFloat(revenueStr);
+      const pay = parseFloat(payoutStr);
+      if (revenueStr === '' || isNaN(rev) || rev <= 0) errors.revenue = 'Сумма должна быть больше нуля';
+      if (payoutStr === '' || isNaN(pay) || pay <= 0) errors.payout = 'Сумма должна быть больше нуля';
+      return errors;
+    }
+
+    function validatePayrollCosmetics(date, seller, amountStr) {
+      const errors = { date: '', seller: '', amount: '' };
+      if (!date) errors.date = 'Укажите дату';
+      if (!seller.trim()) errors.seller = 'Укажите продавца';
+      const amount = parseFloat(amountStr);
+      if (amountStr === '' || isNaN(amount) || amount <= 0) errors.amount = 'Сумма должна быть больше нуля';
+      return errors;
+    }
+
+    function showPayrollFieldErrors(prefix, fields, errors) {
+      fields.forEach(field => {
+        const fieldEl = document.getElementById(`${prefix}-${field}-field`);
+        const errorEl = document.getElementById(`${prefix}-${field}-error`);
+        if (!fieldEl || !errorEl) return;
+        const msg = errors[field];
+        if (msg) {
+          fieldEl.classList.add('error');
+          errorEl.textContent = msg;
+        } else {
+          fieldEl.classList.remove('error');
+          errorEl.textContent = '';
+        }
+      });
+    }
+
+    function renderPayrollEntryList(containerId, rowsHtml, emptyText) {
+      const container = document.getElementById(containerId);
+      if (!rowsHtml) {
+        container.innerHTML = '<div class="payroll-empty">' + emptyText + '</div>';
+        return;
+      }
+      container.innerHTML = '<table class="payroll-table"><tbody>' + rowsHtml + '</tbody></table>';
+    }
+
+    function renderPayrollServiceList(monthKey) {
+      const entries = payrollServiceEntries
+        .filter(e => getMonthKey(e.date) === monthKey)
+        .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+
+      const rows = entries.map(e => `
+        <tr>
+          <td>${formatDate(e.date)}</td>
+          <td>${e.procedure}</td>
+          <td>${e.master}</td>
+          <td class="num">${formatMoney(e.serviceRevenue)}</td>
+          <td class="num">${formatMoney(e.masterPayout)}</td>
+          <td><button type="button" class="btn-delete" data-delete-service="${e.id}" title="Удалить" aria-label="Удалить">✕</button></td>
+        </tr>
+      `).join('');
+
+      renderPayrollEntryList('payroll-service-list', rows, 'Процедур за месяц пока нет');
+      document.getElementById('payroll-service-list').querySelectorAll('[data-delete-service]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          payrollServiceEntries = payrollServiceEntries.filter(x => x.id !== btn.dataset.deleteService);
+          savePayrollServiceEntries();
+          renderPayroll();
+        });
+      });
+    }
+
+    function renderPayrollCosmeticsList(monthKey) {
+      const pct = payrollSettings.cosmeticsPercent ?? 10;
+      const entries = payrollCosmeticsEntries
+        .filter(e => getMonthKey(e.date) === monthKey)
+        .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+
+      const rows = entries.map(e => {
+        const bonus = e.saleAmount * pct / 100;
+        return `
+        <tr>
+          <td>${formatDate(e.date)}</td>
+          <td>${e.seller}</td>
+          <td class="num">${formatMoney(e.saleAmount)}</td>
+          <td class="num">${formatMoney(bonus)}</td>
+          <td><button type="button" class="btn-delete" data-delete-cosmetics="${e.id}" title="Удалить" aria-label="Удалить">✕</button></td>
+        </tr>
+      `;
+      }).join('');
+
+      renderPayrollEntryList('payroll-cosmetics-list', rows, 'Продаж косметики за месяц пока нет');
+      document.getElementById('payroll-cosmetics-list').querySelectorAll('[data-delete-cosmetics]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          payrollCosmeticsEntries = payrollCosmeticsEntries.filter(x => x.id !== btn.dataset.deleteCosmetics);
+          savePayrollCosmeticsEntries();
+          renderPayroll();
+        });
+      });
+    }
+
+    function renderPayroll() {
+      syncManagerFormFromData();
+      const monthKey = getSelectedMonth();
+      const calc = calculatePayroll(monthKey);
+
+      document.getElementById('payroll-total').textContent = formatMoney(calc.total);
+      document.getElementById('payroll-breakdown').innerHTML = `
+        <div class="payroll-breakdown-row"><span>Мастера (процедуры)</span><span>${formatMoney(calc.mastersTotal)}</span></div>
+        <div class="payroll-breakdown-row"><span>Бонусы за косметику (${calc.cosmeticsPercent}%)</span><span>${formatMoney(calc.cosmeticsTotal)}</span></div>
+        <div class="payroll-breakdown-row"><span>Менеджер</span><span>${formatMoney(calc.managerTotal)}</span></div>
+        <div class="payroll-breakdown-row"><span>Уборка</span><span>${formatMoney(calc.cleaningTotal)}</span></div>
+      `;
+
+      document.getElementById('manager-calc').innerHTML = `
+        <div class="manager-calc-row"><span>Выручка по услугам</span><span>${formatMoney(calc.serviceRevenue)}</span></div>
+        <div class="manager-calc-row"><span>За смены</span><span>${formatMoney(calc.managerShiftPay)}</span></div>
+        <div class="manager-calc-row"><span>Процентная часть</span><span>${formatMoney(calc.managerPercentPay)}</span></div>
+        <div class="manager-calc-row"><span>Итого менеджер</span><span>${formatMoney(calc.managerTotal)}</span></div>
+      `;
+
+      const posted = payrollPosted[monthKey];
+      const postedBadge = document.getElementById('payroll-posted-badge');
+      const postBtn = document.getElementById('post-payroll-btn');
+      if (posted && posted.operationId && operations.some(o => o.id === posted.operationId)) {
+        postedBadge.hidden = false;
+        postedBadge.textContent = 'Зафиксировано: ' + formatMoney(posted.amount);
+      } else {
+        postedBadge.hidden = true;
+      }
+      postBtn.disabled = calc.total <= 0;
+
+      renderPayrollServiceList(monthKey);
+      renderPayrollCosmeticsList(monthKey);
+    }
+
+    function postPayrollToExpenses() {
+      const monthKey = getSelectedMonth();
+      const calc = calculatePayroll(monthKey);
+      if (calc.total <= 0) {
+        showToast('ФОТ равен нулю');
+        return;
+      }
+
+      const posted = payrollPosted[monthKey];
+      const hasPosted = posted && posted.operationId && operations.some(o => o.id === posted.operationId);
+
+      const msg = hasPosted
+        ? `Заменить зафиксированный ФОТ (${formatMoney(posted.amount)}) на ${formatMoney(calc.total)}?`
+        : `Зафиксировать ФОТ ${formatMoney(calc.total)} в расходы за ${formatMonthLabel(monthKey)}?`;
+
+      if (!confirm(msg)) return;
+
+      if (hasPosted) {
+        operations = operations.filter(o => o.id !== posted.operationId);
+      }
+
+      const op = {
+        id: generateId(),
+        type: 'expense',
+        date: getLastDayOfMonth(monthKey),
+        category: CATEGORY_FOT,
+        amount: calc.total
+      };
+      operations.push(op);
+      saveOperations();
+
+      payrollPosted[monthKey] = {
+        operationId: op.id,
+        amount: calc.total,
+        postedAt: new Date().toISOString()
+      };
+      savePayrollPosted();
+      renderAll();
+      showToast('ФОТ зафиксирован в расходах');
+    }
+
+    function initPayroll() {
+      document.getElementById('payroll-service-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const date = document.getElementById('ps-date').value;
+        const procedure = document.getElementById('ps-procedure').value;
+        const master = document.getElementById('ps-master').value;
+        const revenueStr = document.getElementById('ps-revenue').value;
+        const payoutStr = document.getElementById('ps-payout').value;
+        const errors = validatePayrollService(date, procedure, master, revenueStr, payoutStr);
+        const fields = ['date', 'procedure', 'master', 'revenue', 'payout'];
+        if (fields.some(f => errors[f])) {
+          showPayrollFieldErrors('ps', fields, errors);
+          return;
+        }
+        showPayrollFieldErrors('ps', fields, { date: '', procedure: '', master: '', revenue: '', payout: '' });
+        payrollServiceEntries.push({
+          id: generateId(),
+          date,
+          procedure: procedure.trim(),
+          master: master.trim(),
+          serviceRevenue: parseFloat(revenueStr),
+          masterPayout: parseFloat(payoutStr)
+        });
+        savePayrollServiceEntries();
+        document.getElementById('ps-revenue').value = '';
+        document.getElementById('ps-payout').value = '';
+        document.getElementById('ps-procedure').value = '';
+        renderPayroll();
+        showToast('Процедура добавлена');
+      });
+
+      document.getElementById('payroll-cosmetics-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const date = document.getElementById('pc-date').value;
+        const seller = document.getElementById('pc-seller').value;
+        const amountStr = document.getElementById('pc-amount').value;
+        const errors = validatePayrollCosmetics(date, seller, amountStr);
+        const fields = ['date', 'seller', 'amount'];
+        if (fields.some(f => errors[f])) {
+          showPayrollFieldErrors('pc', fields, errors);
+          return;
+        }
+        showPayrollFieldErrors('pc', fields, { date: '', seller: '', amount: '' });
+        payrollCosmeticsEntries.push({
+          id: generateId(),
+          date,
+          seller: seller.trim(),
+          saleAmount: parseFloat(amountStr)
+        });
+        savePayrollCosmeticsEntries();
+        document.getElementById('pc-amount').value = '';
+        document.getElementById('pc-seller').value = '';
+        renderPayroll();
+        showToast('Продажа косметики добавлена');
+      });
+
+      ['pm-name', 'pm-shifts', 'pm-shift-rate', 'pm-percent'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+          saveManagerFormToData();
+          renderPayrollSummaryOnly();
+        });
+      });
+
+      document.getElementById('pf-cleaning').addEventListener('input', () => {
+        saveFixedFormToData();
+        renderPayrollSummaryOnly();
+      });
+
+      document.getElementById('post-payroll-btn').addEventListener('click', postPayrollToExpenses);
+
+      document.getElementById('ps-date').value = getTodayDate();
+      document.getElementById('pc-date').value = getTodayDate();
+    }
+
+    function renderPayrollSummaryOnly() {
+      const monthKey = getSelectedMonth();
+      const calc = calculatePayroll(monthKey);
+      document.getElementById('payroll-total').textContent = formatMoney(calc.total);
+      document.getElementById('payroll-breakdown').innerHTML = `
+        <div class="payroll-breakdown-row"><span>Мастера (процедуры)</span><span>${formatMoney(calc.mastersTotal)}</span></div>
+        <div class="payroll-breakdown-row"><span>Бонусы за косметику (${calc.cosmeticsPercent}%)</span><span>${formatMoney(calc.cosmeticsTotal)}</span></div>
+        <div class="payroll-breakdown-row"><span>Менеджер</span><span>${formatMoney(calc.managerTotal)}</span></div>
+        <div class="payroll-breakdown-row"><span>Уборка</span><span>${formatMoney(calc.cleaningTotal)}</span></div>
+      `;
+      document.getElementById('manager-calc').innerHTML = `
+        <div class="manager-calc-row"><span>Выручка по услугам</span><span>${formatMoney(calc.serviceRevenue)}</span></div>
+        <div class="manager-calc-row"><span>За смены</span><span>${formatMoney(calc.managerShiftPay)}</span></div>
+        <div class="manager-calc-row"><span>Процентная часть</span><span>${formatMoney(calc.managerPercentPay)}</span></div>
+        <div class="manager-calc-row"><span>Итого менеджер</span><span>${formatMoney(calc.managerTotal)}</span></div>
+      `;
+      document.getElementById('post-payroll-btn').disabled = calc.total <= 0;
+    }
+
     // ─── CRUD операций ───────────────────────────────────────────
 
     function addOperation(type, date, category, amount) {
@@ -2086,6 +2780,7 @@
 
     function init() {
       loadOperations();
+      loadPayrollData();
       updateThemeToggleUi(getCurrentTheme());
       themeToggleBtn.addEventListener('click', toggleTheme);
 
@@ -2128,6 +2823,8 @@
       const expenseCategorySelect = document.getElementById('expense-category');
       expenseCategorySelect.addEventListener('change', updateFotHint);
       updateFotHint();
+
+      initPayroll();
 
       renderAll();
     }
